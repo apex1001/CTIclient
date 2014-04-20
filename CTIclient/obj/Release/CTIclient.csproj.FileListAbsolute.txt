@@ -1,0 +1,11 @@
+C:\Users\Apex\documents\visual studio 2010\Projects\CTIclient\CTIclient\bin\Release\CTIclient.dll
+C:\Users\Apex\documents\visual studio 2010\Projects\CTIclient\CTIclient\bin\Release\CTIclient.pdb
+C:\Users\Apex\documents\visual studio 2010\Projects\CTIclient\CTIclient\obj\Release\CTIclient.csprojResolveAssemblyReference.cache
+C:\Users\Apex\documents\visual studio 2010\Projects\CTIclient\CTIclient\obj\Release\Interop.SHDocVw.dll
+C:\Users\Apex\documents\visual studio 2010\Projects\CTIclient\CTIclient\obj\Release\CTIclient.csproj.ResolveComReference.cache
+C:\Users\Apex\documents\visual studio 2010\Projects\CTIclient\CTIclient\obj\Release\CTIclient.Properties.Resources.resources
+C:\Users\Apex\documents\visual studio 2010\Projects\CTIclient\CTIclient\obj\Release\CTIclient.csproj.GenerateResource.Cache
+C:\Users\Apex\documents\visual studio 2010\Projects\CTIclient\CTIclient\obj\Release\CTIclient.dll
+C:\Users\Apex\documents\visual studio 2010\Projects\CTIclient\CTIclient\obj\Release\CTIclient.pdb
+C:\Users\Apex\documents\visual studio 2010\Projects\CTIclient\CTIclient\bin\Release\Interop.SHDocVw.dll
+C:\Users\apex\Documents\Visual Studio 2010\Projects\CTIclient\CTIclient\bin\Release\WebSocket4Net.dll
