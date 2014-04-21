@@ -37,6 +37,8 @@ namespace CTIclient
         private ToolStripMenuItem history;
         private ToolStripComboBox comboBox;
         private CommandObject commandObject;
+        private ToolStripButton onHookButton;
+        private ToolStripButton transferButton;
         private string from;
         private string to;
         private string target;
@@ -57,6 +59,18 @@ namespace CTIclient
             this.commandObject = controller.getCommandObject();
             comboBox.Items.AddRange(new object[] { commandObject.To });
             comboBox.Text = commandObject.To;
+
+            string status = this.commandObject.Status.ToString();
+            if (status.Equals("Confirmed Dialog"))
+            {
+                onHookButton.BackgroundImage = ((System.Drawing.Image)(Properties.Resources.landline_onhook));
+                transferButton.BackgroundImage = ((System.Drawing.Image)(Properties.Resources.transfer));
+            }
+            else
+            {
+                onHookButton.BackgroundImage = ((System.Drawing.Image)(Properties.Resources.landline_onhook_grey));
+                transferButton.BackgroundImage = ((System.Drawing.Image)(Properties.Resources.transfer_right_left_grey));
+            }
             toolStrip.PerformLayout();
         }
 
@@ -133,8 +147,8 @@ namespace CTIclient
             toolStrip.Renderer = new NoBorderToolStripRenderer();
             comboBox = new ToolStripComboBox();
             ToolStripButton offHookButton = new ToolStripButton();
-            ToolStripButton onHookButton = new ToolStripButton();
-            ToolStripButton transferButton = new ToolStripButton();
+            onHookButton = new ToolStripButton();
+            transferButton = new ToolStripButton();
             System.Drawing.Size buttonSize = new System.Drawing.Size(27, 27);
 
             // Suspend layout
@@ -150,13 +164,13 @@ namespace CTIclient
             onHookButton.AutoSize = false;
             onHookButton.Size = buttonSize;
             onHookButton.BackgroundImageLayout = ImageLayout.Stretch;
-            onHookButton.BackgroundImage = ((System.Drawing.Image)(Properties.Resources.landline_onhook));
+            onHookButton.BackgroundImage = ((System.Drawing.Image)(Properties.Resources.landline_onhook_grey));
             onHookButton.Click += new System.EventHandler(onHookButton_Click);
 
             transferButton.AutoSize = false;
             transferButton.Size = buttonSize;
             transferButton.BackgroundImageLayout = ImageLayout.Stretch;
-            transferButton.BackgroundImage = ((System.Drawing.Image)(Properties.Resources.transfer));
+            transferButton.BackgroundImage = ((System.Drawing.Image)(Properties.Resources.transfer_right_left_grey));
             transferButton.Click += new System.EventHandler(transferButton_Click);
 
             // Initialize combobox            

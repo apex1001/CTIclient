@@ -125,7 +125,9 @@ namespace CTIclient
          */
         public void hangup(String to)
         {
-           wsClient.closeConnection();
+            commandObject.Status = CallTerminated;
+            wsClient.closeConnection();
+            doViewUpdate("callControlView");
         }
 
         /**
@@ -163,6 +165,27 @@ namespace CTIclient
             string json = Util.toJSON(command);
             wsClient.sendMessage(json); // Activate  AES later
             //wsClient.sendMessage(AESModule.EncryptRJ128(sKy, sIV, json));
+        }
+
+        public void receiveCommand(string message)
+        {
+            commandObject = Util.fromJSON(message);
+            MessageBox.Show(commandObject.Status.ToString());
+
+            string command = commandObject.Command.ToString();
+            string callStatus = commandObject.Status.ToString();
+
+            if (command.Equals("call") && callStatus.Equals("Terminated Dialog"))
+            {
+                hangup(commandObject.To.ToString());
+                doViewUpdate("callControlView");
+            }
+
+            if (command.Equals("call") && callStatus.Equals("Confirmed Dialog"))
+            {
+                this.status = CallConnected;
+                doViewUpdate("callControlView");
+            }
         }
 
         /**

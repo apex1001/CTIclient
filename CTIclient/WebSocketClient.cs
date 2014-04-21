@@ -90,8 +90,8 @@ namespace CTIclient
         }
 
         void websocket_MessageReceived(object sender, MessageReceivedEventArgs e)
-        {
-            MessageBox.Show("message:" + e.Message + "\r\n");
+        {   
+            this.controller.receiveCommand(e.Message);
         }
 
         private void addEventListeners()

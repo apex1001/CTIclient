@@ -29,6 +29,10 @@ namespace CTIclient
         private string user;
         private string value;
 
+        public CommandObject()
+        {
+        }
+
         public CommandObject(
             string command = "",
             string status = "",

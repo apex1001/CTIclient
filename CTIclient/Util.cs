@@ -11,6 +11,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Web.Script.Serialization;
+using System.Windows.Forms;
 
 namespace CTIclient
 {
@@ -41,6 +42,28 @@ namespace CTIclient
             JavaScriptSerializer js = new JavaScriptSerializer();
             string json = js.Serialize(obj);
             return json;
+        }
+
+        /**
+         * Convert JSON to Object
+         * 
+         * @param JSON string to convert
+         * @return CommandObject
+         * 
+         */
+        public static CommandObject fromJSON(string json)
+        {
+            try
+            {
+                JavaScriptSerializer js = new JavaScriptSerializer();
+                CommandObject commandObject = js.Deserialize<CommandObject>(json);
+                return commandObject;
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show(e.Message);
+                return null;
+            }
         }
     }
 }

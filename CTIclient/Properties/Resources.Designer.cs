@@ -83,9 +83,29 @@ namespace CTIclient.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap landline_onhook_grey {
+            get {
+                object obj = ResourceManager.GetObject("landline_onhook_grey", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap transfer {
             get {
                 object obj = ResourceManager.GetObject("transfer", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap transfer_right_left_grey {
+            get {
+                object obj = ResourceManager.GetObject("transfer_right_left_grey", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
