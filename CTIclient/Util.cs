@@ -6,6 +6,7 @@
  */
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -58,6 +59,28 @@ namespace CTIclient
                 JavaScriptSerializer js = new JavaScriptSerializer();
                 CommandObject commandObject = js.Deserialize<CommandObject>(json);
                 return commandObject;
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show(e.Message);
+                return null;
+            }
+        }
+
+        /**
+          * Convert JSON array string to ArrayList
+          * 
+          * @param JSON string to convert
+          * @return ArrayList
+          * 
+          */
+        public static ArrayList ListfromJSON(string json)
+        {
+            try
+            {
+                JavaScriptSerializer js = new JavaScriptSerializer();
+                ArrayList array = js.Deserialize<ArrayList>(json);
+                return array;
             }
             catch (Exception e)
             {

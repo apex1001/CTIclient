@@ -51,9 +51,9 @@ namespace CTIclient
                 websocket = new WebSocket(url);
                 addEventListeners();
                 websocket.Open();
-                for (int i=0; i < 15; i++) 
+                for (int i=0; i < 30; i++) 
                 {
-                    Thread.Sleep(200);
+                    Thread.Sleep(100);
                     if (connectionOpen) break;                
                 }
                 if (!connectionOpen) MessageBox.Show("Connection error");               
@@ -74,19 +74,17 @@ namespace CTIclient
 
         void websocket_Opened(object sender, EventArgs e)
         {
-            connectionOpen = true;
-            //MessageBox.Show("Opened!" + e.ToString());
+            connectionOpen = true;            
         }
 
         void websocket_Closed(object sender, EventArgs e)
         {
             connectionOpen = false;
-            // MessageBox.Show("Closed!" + e.ToString());
         }
 
         void websocket_Error(object sender, SuperSocket.ClientEngine.ErrorEventArgs e)
         {
-            //MessageBox.Show("Error!" + e.Exception.Message);
+            MessageBox.Show("Error!" + e.Exception.Message);
         }
 
         void websocket_MessageReceived(object sender, MessageReceivedEventArgs e)

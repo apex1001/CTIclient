@@ -39,10 +39,10 @@ namespace CTIclient
         private CommandObject commandObject;
         private ToolStripButton onHookButton;
         private ToolStripButton transferButton;
-        private string from;
-        private string to;
-        private string target;
-        private string value;
+        //private string from;
+        //private string to;
+        //private string target;
+        //private string value;
         
         public CallControlView(BHOController toolbar)
         {

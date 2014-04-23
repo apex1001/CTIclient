@@ -27,6 +27,7 @@ namespace CTIclient
         private string target;
         private string pin;
         private string user;
+        private string role;
         private string value;
 
         public CommandObject()
@@ -40,7 +41,8 @@ namespace CTIclient
             string to = "", 
             string target = "", 
             string pin = "", 
-            string user = "", 
+            string user = "",
+            string role = "",
             string value = "")
         {
             this.command = command;
@@ -50,6 +52,7 @@ namespace CTIclient
             this.target = target;
             this.pin = pin;
             this.user = user;
+            this.role = role;
             this.value = value;
         }
         
@@ -134,6 +137,18 @@ namespace CTIclient
             set
             {
                 this.user = value;
+            }
+        }
+
+        public string Role
+        {
+            get
+            {
+                return this.role;
+            }
+            set
+            {
+                this.role = value;
             }
         }
 

@@ -9,7 +9,7 @@
  * http://weblogs.com.pk/kadnan/articles/1500.aspx
  * http://www.codeproject.com/Articles/19820/Issues-faced-while-extending-IE-with-Band-Objects
  * 
- * Many thanx to to the authors of these articles :-).
+ * Many thanx to the authors of these articles :-).
  * 
  */
 
@@ -42,11 +42,14 @@ namespace CTIclient
         private Dictionary<string, ICTIView> viewList;
         private CommandObject commandObject;
         private WebSocketClient wsClient;
+        private ADUser adUser;
+        //private ArrayList extensionList;
+
         private string status = "";
         private string url = "ws://localhost:7777/";
-        private string from = "220";
-        private string pin = "1234";
-        private string user = "GRN01234";
+        private string from = "";
+        private string pin = "";
+        private string user;
 
         // Call status constants from the sipXecs platform.
         private const string CallSetup = "Early Dialog";
@@ -79,18 +82,8 @@ namespace CTIclient
             callControlView = new CallControlView(this);
             initCallControlView();
             //settingsView = new SettingsView(this);
-            //historyView = new HistoryView(this);
-
-            // Create command object
-            commandObject = new CommandObject(from: from, user: user, pin: pin);
-            
-            // Create websocket client
-            try
-            {
-                wsClient = new WebSocketClient(this, url);
-            }
-            catch (Exception e) { MessageBox.Show("Error:" + e.Message); }
-            
+            //historyView = new HistoryView(this);             
+             
 
             // Attach explorer & document
             this.ExplorerAttached += new EventHandler(CallControlView_ExplorerAttached);
@@ -105,6 +98,7 @@ namespace CTIclient
          * Dial a number
          * 
          * @param to number
+         * 
          */
         public void dial(String to)
         {
@@ -112,7 +106,6 @@ namespace CTIclient
             this.status = CallSetup;
             commandObject.Command = "call";
             commandObject.Status = this.status;
-
             sendCommand(commandObject);
             doViewUpdate("callControlView");
         }
@@ -160,20 +153,43 @@ namespace CTIclient
             MessageBox.Show("history!");
         }
 
+        /**
+         * Send command to server
+         * 
+         * @param commandObject;
+         * 
+         */
         private void sendCommand(CommandObject command)
         {            
             string json = Util.toJSON(command);
+
+            //MessageBox.Show("json:" + json);
             wsClient.sendMessage(json); // Activate  AES later
             //wsClient.sendMessage(AESModule.EncryptRJ128(sKy, sIV, json));
         }
 
+
+        /**
+         * Receive command from server
+         * 
+         * @param commandObject;
+         * 
+         */
         public void receiveCommand(string message)
         {
             commandObject = Util.fromJSON(message);
-            MessageBox.Show(commandObject.Status.ToString());
+            //MessageBox.Show("json " + message);
 
             string command = commandObject.Command.ToString();
             string callStatus = commandObject.Status.ToString();
+
+            if (command.Equals("settingsList"))
+            {
+                this.from = commandObject.From;
+                this.pin = commandObject.Pin;
+                //MessageBox.Show ("settings:" + commandObject.Value);
+                //this.extensi6onList = Util.ListfromJSON(commandObject.Value);
+            }
 
             if (command.Equals("call") && callStatus.Equals("Terminated Dialog"))
             {
@@ -215,10 +231,21 @@ namespace CTIclient
          * 
          * @param sender of the event
          * @param args
+         * 
          */
         private void CallControlView_ExplorerAttached(object sender, EventArgs e)
         {
             Explorer.DocumentComplete += new SHDocVw.DWebBrowserEvents2_DocumentCompleteEventHandler(Explorer_DocumentComplete);
+
+            // Create websocket client
+            try
+            {
+                this.wsClient = new WebSocketClient(this, url);
+            }
+            catch (Exception ex) { MessageBox.Show("WS Error:" + ex.Message); }           
+            
+            // Init settings
+            getSettings();
         }
 
         /**
@@ -227,6 +254,7 @@ namespace CTIclient
          * 
          * @param document
          * @param url of document
+         * 
          */
         private void Explorer_DocumentComplete(object pDisp, ref object URL)
         {
@@ -238,6 +266,7 @@ namespace CTIclient
          * 
          * @param sender of the event
          * @param args
+         * 
          */
         public void comboBox_GotFocus(object sender, EventArgs e)
         {
@@ -252,7 +281,6 @@ namespace CTIclient
          */
         public override int TranslateAcceleratorIO(ref MSG msg)
         {
-            //const int WM_CHAR = 0x0102;
             TranslateMessage(ref msg);
             DispatchMessage(ref msg);
             return 0; //S_OK
@@ -278,6 +306,17 @@ namespace CTIclient
             viewList.Add("callControlView", callControlView);
         }
 
+        private void getSettings()
+        {
+            // Get current user
+            this.adUser = new ADUser();
+            this.user = adUser.getUserName();
+                        
+            // Create command object
+            this.commandObject = new CommandObject(command: "getSettings", user: this.user);
+            sendCommand(commandObject);
+        }
+
         /**
          * Dispose of toolbar
          * 
@@ -290,8 +329,7 @@ namespace CTIclient
                     components.Dispose();
             }
             wsClient.closeConnection();
-            base.Dispose(disposing);
-            
+            base.Dispose(disposing);            
         }
     }
 }
