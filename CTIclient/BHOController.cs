@@ -82,8 +82,7 @@ namespace CTIclient
             callControlView = new CallControlView(this);
             initCallControlView();
             //settingsView = new SettingsView(this);
-            //historyView = new HistoryView(this);             
-             
+            //historyView = new HistoryView(this);  
 
             // Attach explorer & document
             this.ExplorerAttached += new EventHandler(CallControlView_ExplorerAttached);
@@ -162,12 +161,9 @@ namespace CTIclient
         private void sendCommand(CommandObject command)
         {            
             string json = Util.toJSON(command);
-
-            //MessageBox.Show("json:" + json);
             wsClient.sendMessage(json); // Activate  AES later
             //wsClient.sendMessage(AESModule.EncryptRJ128(sKy, sIV, json));
         }
-
 
         /**
          * Receive command from server
@@ -178,8 +174,6 @@ namespace CTIclient
         public void receiveCommand(string message)
         {
             commandObject = Util.fromJSON(message);
-            //MessageBox.Show("json " + message);
-
             string command = commandObject.Command.ToString();
             string callStatus = commandObject.Status.ToString();
 
@@ -187,14 +181,20 @@ namespace CTIclient
             {
                 this.from = commandObject.From;
                 this.pin = commandObject.Pin;
-                //MessageBox.Show ("settings:" + commandObject.Value);
                 //this.extensi6onList = Util.ListfromJSON(commandObject.Value);
             }
 
             if (command.Equals("call") && callStatus.Equals("Terminated Dialog"))
             {
-                hangup(commandObject.To.ToString());
-                doViewUpdate("callControlView");
+                this.status = CallTerminated; 
+                hangup(commandObject.To.ToString());               
+            }
+            
+            if (command.Equals("call") && callStatus.Equals("Busy Dialog"))
+            {
+                MessageBox.Show("Toestel is in gesprek.", "Melding");
+                this.status = CallTerminated; 
+                hangup(commandObject.To.ToString());               
             }
 
             if (command.Equals("call") && callStatus.Equals("Confirmed Dialog"))
