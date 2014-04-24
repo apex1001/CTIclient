@@ -15,32 +15,34 @@ using System.Text;
 using System.DirectoryServices;
 using System.DirectoryServices.AccountManagement;
 using System.Windows.Forms;
+using System.Security.Principal;
 
 namespace CTIclient
 {
     public class ADUser
     {
-        private UserPrincipal user;
+        private UserPrincipal user = null;
         private string username;
         private string mobilePhone;
         
         public ADUser()
         {
-            try
-            {
-                user = UserPrincipal.Current;
-                mobilePhone = "";
-                username = user.SamAccountName;
+            mobilePhone = "";
+            username = Environment.UserName;
 
-                // Get the underlying object for user properties
-                DirectoryEntry directoryEntry = user.GetUnderlyingObject() as DirectoryEntry;
-                if (directoryEntry.Properties.Contains("mobile"))
-                    mobilePhone = directoryEntry.Properties["mobile"].Value.ToString();               
-            }
-
-            catch (Exception e)
+            // Check for local user. This check is faster than getting UserPrincipal
+            // on domain query timeout.
+            string machineUsername = WindowsIdentity.GetCurrent().Name;
+            if (machineUsername.ToLower().Contains("politienl"))
             {
-                MessageBox.Show("Authentication error:" + e.Message);
+                try
+                {
+                    getUserPrincipal();
+                }
+                catch (Exception e)
+                {
+                    MessageBox.Show("Authentication error:" + e.Message);
+                }
             }
         }
     
@@ -52,6 +54,8 @@ namespace CTIclient
          */
         public UserPrincipal getUserObject()
         {
+            if (this.user == null)
+                getUserPrincipal();
             return this.user;
         }
 
@@ -76,6 +80,26 @@ namespace CTIclient
         {
             return this.mobilePhone;
         }
+
+        /**
+         * Get user principal
+         * 
+         * @return UserPrincipal
+         * 
+         */
+        private UserPrincipal getUserPrincipal()
+        {
+            user = UserPrincipal.Current;
+            username = user.SamAccountName;
+                   
+            //Get the underlying object for user properties
+            DirectoryEntry directoryEntry = user.GetUnderlyingObject() as DirectoryEntry;
+            if (directoryEntry.Properties.Contains("mobile"))
+            {
+                mobilePhone = directoryEntry.Properties["mobile"].Value.ToString();
+            }
+            return user;
+        }   
     }
 }
 

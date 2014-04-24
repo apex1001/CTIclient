@@ -179,7 +179,7 @@ namespace CTIclient
             HTMLWindowEvents2_Event windowEvent = (document.parentWindow as HTMLWindowEvents2_Event);
             HTMLDocumentEvents2_Event docEvent = (document as HTMLDocumentEvents2_Event);
 
-            // First unhook all event handlers.
+            // First unhook all event handlers, if any.
             try
             {
                 windowEvent.onload -= new HTMLWindowEvents2_onloadEventHandler(OnLoadHandler);
@@ -190,7 +190,7 @@ namespace CTIclient
             }
             catch { }
 
-            // Now hook them all, except mouseOver.
+            // Now hook them all, except onmousemove.
             windowEvent.onload += new HTMLWindowEvents2_onloadEventHandler(OnLoadHandler);
             docEvent.onpropertychange += new HTMLDocumentEvents2_onpropertychangeEventHandler(OnPropertyChangeHandler);
             docEvent.onreadystatechange += new HTMLDocumentEvents2_onreadystatechangeEventHandler(OnReadyStateChangeHandler);

@@ -65,28 +65,6 @@ namespace CTIclient
                 MessageBox.Show(e.Message);
                 return null;
             }
-        }
-
-        /**
-          * Convert JSON array string to ArrayList
-          * 
-          * @param JSON string to convert
-          * @return ArrayList
-          * 
-          */
-        public static ArrayList ListfromJSON(string json)
-        {
-            try
-            {
-                JavaScriptSerializer js = new JavaScriptSerializer();
-                ArrayList array = js.Deserialize<ArrayList>(json);
-                return array;
-            }
-            catch (Exception e)
-            {
-                MessageBox.Show(e.Message);
-                return null;
-            }
-        }
+        } 
     }
 }

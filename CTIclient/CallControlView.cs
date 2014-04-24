@@ -38,7 +38,10 @@ namespace CTIclient
         private ToolStripComboBox comboBox;
         private CommandObject commandObject;
         private ToolStripButton onHookButton;
+        private ToolStripButton offHookButton;
         private ToolStripButton transferButton;
+
+        private const string CallConnected = "Confirmed Dialog";
         //private string from;
         //private string to;
         //private string target;
@@ -61,19 +64,11 @@ namespace CTIclient
             comboBox.Text = commandObject.To;
 
             string status = this.commandObject.Status.ToString();
-            if (status.Equals("Confirmed Dialog"))
-            {
-                onHookButton.BackgroundImage = ((System.Drawing.Image)(Properties.Resources.landline_onhook));
-                transferButton.BackgroundImage = ((System.Drawing.Image)(Properties.Resources.transfer));
-            }
-            else
-            {
-                onHookButton.BackgroundImage = ((System.Drawing.Image)(Properties.Resources.landline_onhook_grey));
-                transferButton.BackgroundImage = ((System.Drawing.Image)(Properties.Resources.transfer_right_left_grey));
-            }
+            enableButtons(status.Equals(CallConnected));
+            
             toolStrip.PerformLayout();
         }
-
+ 
          /**
           * Call controller on offHook/dial event. 
           * Looks for active/selected number in combobox
@@ -137,6 +132,24 @@ namespace CTIclient
         }
 
         /**
+         * Enable buttons on active call;
+         * 
+         */
+        private void enableButtons(Boolean enable)
+        {
+            if (enable)
+            {
+                onHookButton.BackgroundImage = ((System.Drawing.Image)(Properties.Resources.landline_onhook));
+                transferButton.BackgroundImage = ((System.Drawing.Image)(Properties.Resources.transfer));
+            }
+            else
+            {
+                onHookButton.BackgroundImage = ((System.Drawing.Image)(Properties.Resources.landline_onhook_grey));
+                transferButton.BackgroundImage = ((System.Drawing.Image)(Properties.Resources.transfer_right_left_grey));
+            }
+        }
+
+        /**
          * Create all GUI elements for the ToolStrip
          * 
          */
@@ -146,7 +159,7 @@ namespace CTIclient
             toolStrip = new ToolStrip();
             toolStrip.Renderer = new NoBorderToolStripRenderer();
             comboBox = new ToolStripComboBox();
-            ToolStripButton offHookButton = new ToolStripButton();
+            offHookButton = new ToolStripButton();
             onHookButton = new ToolStripButton();
             transferButton = new ToolStripButton();
             System.Drawing.Size buttonSize = new System.Drawing.Size(27, 27);

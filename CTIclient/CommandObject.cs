@@ -17,7 +17,7 @@ namespace CTIclient
     /**
      * A simple POCO for storing commands
      * 
-     */    
+     */
     public class CommandObject
     {
         private string command;
@@ -28,7 +28,7 @@ namespace CTIclient
         private string pin;
         private string user;
         private string role;
-        private string value;
+        private string[][] value;
 
         public CommandObject()
         {
@@ -37,13 +37,13 @@ namespace CTIclient
         public CommandObject(
             string command = "",
             string status = "",
-            string from = "", 
-            string to = "", 
-            string target = "", 
-            string pin = "", 
+            string from = "",
+            string to = "",
+            string target = "",
+            string pin = "",
             string user = "",
             string role = "",
-            string value = "")
+            string[][] value = null)
         {
             this.command = command;
             this.status = status;
@@ -55,7 +55,7 @@ namespace CTIclient
             this.role = role;
             this.value = value;
         }
-        
+
         public string Command
         {
             get
@@ -152,7 +152,7 @@ namespace CTIclient
             }
         }
 
-        public string Value
+        public string[][] Value
         {
             get
             {

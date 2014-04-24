@@ -36,25 +36,27 @@ namespace CTIclient
     [BandObject("CTIClient", BandObjectStyle.Horizontal | BandObjectStyle.ExplorerToolbar, HelpText = "CTIclient")]
     public class BHOController : BandObject
     {
-        private Container components = null;
-        private DOMChanger domChanger;
-        private CallControlView callControlView;
-        private Dictionary<string, ICTIView> viewList;
-        private CommandObject commandObject;
-        private WebSocketClient wsClient;
         private ADUser adUser;
-        //private ArrayList extensionList;
-
-        private string status = "";
+        private DOMChanger domChanger;
+        private WebSocketClient wsClient;
+        private Container components = null;
+        private CommandObject commandObject; 
+        private CallControlView callControlView;
+        private SettingsView settingsView;
+        private Dictionary<string, ICTIView> viewList;        
+        private String[][] extensionList;
+        
         private string url = "ws://localhost:7777/";
-        private string from = "";
-        private string pin = "";
+        private string status;
+        private string from;
+        private string pin;
         private string user;
 
         // Call status constants from the sipXecs platform.
         private const string CallSetup = "Early Dialog";
         private const string CallConnected = "Confirmed Dialog";
         private const string CallTerminated = "Terminated Dialog";
+        private const string CallBusy = "Busy Dialog";
 
         //Shared 128 bit Key and IV here
         private const string sKy = "lkirwf897+22#bbt"; //16 chr shared ascii string (16 * 8 = 128 bit)
@@ -81,16 +83,50 @@ namespace CTIclient
             viewList = new Dictionary<string, ICTIView>();            
             callControlView = new CallControlView(this);
             initCallControlView();
-            //settingsView = new SettingsView(this);
+            settingsView = new SettingsView(this);
             //historyView = new HistoryView(this);  
 
             // Attach explorer & document
             this.ExplorerAttached += new EventHandler(CallControlView_ExplorerAttached);
         }
 
-        public CommandObject getCommandObject()
+        /**
+         * Receive command from server
+         * 
+         * @param commandObject;
+         * 
+         */
+        public void receiveCommand(string message)
         {
-            return commandObject;
+            commandObject = Util.fromJSON(message);
+            string command = commandObject.Command.ToString();
+            string callStatus = commandObject.Status.ToString();
+
+            if (command.Equals("settingsList"))
+            {
+                this.from = commandObject.From;
+                this.pin = commandObject.Pin;
+                this.extensionList = commandObject.Value;
+            }
+
+            if (command.Equals("call") && callStatus.Equals(CallTerminated))
+            {
+                this.status = CallTerminated;
+                hangup(commandObject.To.ToString());
+            }
+
+            if (command.Equals("call") && callStatus.Equals(CallBusy))
+            {
+                MessageBox.Show("Toestel is in gesprek.", "Melding");
+                this.status = CallTerminated;
+                hangup(commandObject.To.ToString());
+            }
+
+            if (command.Equals("call") && callStatus.Equals(CallConnected))
+            {
+                this.status = CallConnected;
+                doViewUpdate("callControlView");
+            }
         }
 
         /**
@@ -101,8 +137,8 @@ namespace CTIclient
          */
         public void dial(String to)
         {
-            commandObject.To = Util.CleanPhoneNumber(to);
             this.status = CallSetup;
+            commandObject.To = Util.CleanPhoneNumber(to);
             commandObject.Command = "call";
             commandObject.Status = this.status;
             sendCommand(commandObject);
@@ -140,7 +176,7 @@ namespace CTIclient
          */
         public void showSettings()
         {
-            MessageBox.Show("settings!");
+            this.settingsView.showSettingsMenu();
         }
 
         /**
@@ -166,45 +202,6 @@ namespace CTIclient
         }
 
         /**
-         * Receive command from server
-         * 
-         * @param commandObject;
-         * 
-         */
-        public void receiveCommand(string message)
-        {
-            commandObject = Util.fromJSON(message);
-            string command = commandObject.Command.ToString();
-            string callStatus = commandObject.Status.ToString();
-
-            if (command.Equals("settingsList"))
-            {
-                this.from = commandObject.From;
-                this.pin = commandObject.Pin;
-                //this.extensi6onList = Util.ListfromJSON(commandObject.Value);
-            }
-
-            if (command.Equals("call") && callStatus.Equals("Terminated Dialog"))
-            {
-                this.status = CallTerminated; 
-                hangup(commandObject.To.ToString());               
-            }
-            
-            if (command.Equals("call") && callStatus.Equals("Busy Dialog"))
-            {
-                MessageBox.Show("Toestel is in gesprek.", "Melding");
-                this.status = CallTerminated; 
-                hangup(commandObject.To.ToString());               
-            }
-
-            if (command.Equals("call") && callStatus.Equals("Confirmed Dialog"))
-            {
-                this.status = CallConnected;
-                doViewUpdate("callControlView");
-            }
-        }
-
-        /**
          * Update all the views
          * 
          * @param view name, all if none given
@@ -227,7 +224,7 @@ namespace CTIclient
 
         /**
          * Handle ExplorerAttached event
-         * Subscribes to document complete
+         * Subscribes to document complete and applies settings 
          * 
          * @param sender of the event
          * @param args
@@ -235,7 +232,8 @@ namespace CTIclient
          */
         private void CallControlView_ExplorerAttached(object sender, EventArgs e)
         {
-            Explorer.DocumentComplete += new SHDocVw.DWebBrowserEvents2_DocumentCompleteEventHandler(Explorer_DocumentComplete);
+            Explorer.DocumentComplete += 
+                new SHDocVw.DWebBrowserEvents2_DocumentCompleteEventHandler(Explorer_DocumentComplete);
 
             // Create websocket client
             try
@@ -306,6 +304,10 @@ namespace CTIclient
             viewList.Add("callControlView", callControlView);
         }
 
+        /**
+         * Get settings from server
+         * 
+         */
         private void getSettings()
         {
             // Get current user
@@ -313,8 +315,30 @@ namespace CTIclient
             this.user = adUser.getUserName();
                         
             // Create command object
-            this.commandObject = new CommandObject(command: "getSettings", user: this.user);
+            this.commandObject = new CommandObject(command: "getSettings", user: user);
             sendCommand(commandObject);
+        }
+
+        /**
+         * Get the active commandobject
+         * 
+         * @return commandObject
+         * 
+         */
+        public CommandObject getCommandObject()
+        {
+            return commandObject;
+        }
+
+        /**
+         * Get the extenston list in nested array format
+         * 
+         * @return extensionlist 
+         * 
+         */
+        public String[][] getExtensionList()
+        {
+            return this.extensionList;
         }
 
         /**

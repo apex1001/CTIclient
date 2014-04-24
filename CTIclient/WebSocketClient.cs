@@ -51,9 +51,9 @@ namespace CTIclient
                 websocket = new WebSocket(url);
                 addEventListeners();
                 websocket.Open();
-                for (int i=0; i < 30; i++) 
+                for (int i=0; i < 300; i++) 
                 {
-                    Thread.Sleep(100);
+                    Thread.Sleep(10);
                     if (connectionOpen) break;                
                 }
                 if (!connectionOpen) MessageBox.Show("Connection error");               
