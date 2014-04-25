@@ -107,6 +107,7 @@ namespace CTIclient
                 this.from = commandObject.From;
                 this.pin = commandObject.Pin;
                 this.extensionList = commandObject.Value;
+                wsClient.closeConnection();
             }
 
             if (command.Equals("call") && callStatus.Equals(CallTerminated))
@@ -126,7 +127,7 @@ namespace CTIclient
             {
                 this.status = CallConnected;
                 doViewUpdate("callControlView");
-            }
+            }            
         }
 
         /**
@@ -138,9 +139,11 @@ namespace CTIclient
         public void dial(String to)
         {
             this.status = CallSetup;
+            commandObject.From = this.from;
             commandObject.To = Util.CleanPhoneNumber(to);
             commandObject.Command = "call";
             commandObject.Status = this.status;
+            commandObject.Value = new String[0][];
             sendCommand(commandObject);
             doViewUpdate("callControlView");
         }
@@ -197,7 +200,9 @@ namespace CTIclient
         private void sendCommand(CommandObject command)
         {            
             string json = Util.toJSON(command);
-            wsClient.sendMessage(json); // Activate  AES later
+            // MessageBox.Show(json);
+            wsClient.sendMessage(json);            
+            // Activate  AES later
             //wsClient.sendMessage(AESModule.EncryptRJ128(sKy, sIV, json));
         }
 
@@ -240,7 +245,10 @@ namespace CTIclient
             {
                 this.wsClient = new WebSocketClient(this, url);
             }
-            catch (Exception ex) { MessageBox.Show("WS Error:" + ex.Message); }           
+            catch //(Exception ex) 
+            { 
+                // MessageBox.Show("WS Error:" + ex.Message); 
+            }           
             
             // Init settings
             getSettings();
@@ -320,6 +328,40 @@ namespace CTIclient
         }
 
         /**
+         * Save settings to server
+         * 
+         */
+        public void updateSettings(String[][] extensionList)
+        {
+            this.extensionList = extensionList;
+            foreach (String[] item in this.extensionList)
+            {
+                if (item.GetValue(2).Equals("t"))
+                {
+                    this.from = item.GetValue(1).ToString();
+                    break;
+                }                
+            }            
+            
+            // Create command object
+            this.commandObject = new CommandObject(command: "updateSettings", from: from, user: user, value: extensionList);
+            sendCommand(commandObject);
+            wsClient.closeConnection();
+        }
+
+        /**
+         * Delete settings from server
+         * 
+         */
+        public void deleteSettings(String[][] deletedExtensionList)
+        {            
+            // Create command object
+            this.commandObject = new CommandObject(command: "deleteSettings", from: from, user: user, value: deletedExtensionList);
+            sendCommand(commandObject);
+            wsClient.closeConnection();
+        }
+        
+        /**
          * Get the active commandobject
          * 
          * @return commandObject
@@ -328,6 +370,17 @@ namespace CTIclient
         public CommandObject getCommandObject()
         {
             return commandObject;
+        }
+
+        /**
+         * Get the active username
+         * 
+         * @return username
+         * 
+         */
+        public String getUsername()
+        {
+            return this.user;
         }
 
         /**

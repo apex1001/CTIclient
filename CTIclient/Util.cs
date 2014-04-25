@@ -60,11 +60,52 @@ namespace CTIclient
                 CommandObject commandObject = js.Deserialize<CommandObject>(json);
                 return commandObject;
             }
-            catch (Exception e)
+            catch // (Exception e)
             {
-                MessageBox.Show(e.Message);
+                // MessageBox.Show(e.Message);
                 return null;
             }
         } 
+
+        /**
+         * Remove an item from an array
+         * 
+         * @param index of item to remove
+         * @param the array to remove it from
+         * @return the new array
+         * 
+         */
+        public static String[][] ArrayRemoveAt(int index, String[][] array)
+        {
+            int newIndex = 0;
+            String[][] newArray = new String[array.Length-1][];
+            for (int i = 0; i < array.Length; i++)
+            {
+                if (i == index) continue;
+                newArray[newIndex] = array[i];
+                newIndex++;
+            }
+            return newArray;
+        }
+
+        /**
+         * Add an array item to the end of another array
+         * 
+         * @param item to add
+         * @param the array to add to
+         * @return the new array
+         * 
+         */
+        public static String[][] ArrayAddItem(String[] item, String[][] array)
+        {
+            int itemSize = array[0].Length;  
+            String[][] newArray = new String[array.Length + 1][];
+            for (int i = 0; i < array.Length; i++)
+            {
+                newArray[i] = array[i];
+            }
+           newArray[array.Length] = item;
+           return newArray;
+        }
     }
 }

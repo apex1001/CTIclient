@@ -39,9 +39,9 @@ namespace CTIclient
                 {
                     getUserPrincipal();
                 }
-                catch (Exception e)
+                catch // (Exception e)
                 {
-                    MessageBox.Show("Authentication error:" + e.Message);
+                    // MessageBox.Show("Authentication error:" + e.Message);
                 }
             }
         }

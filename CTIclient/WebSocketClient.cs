@@ -34,14 +34,15 @@ namespace CTIclient
             this.url = url;
         }
 
-        public void sendMessage(string text)
+        public Boolean sendMessage(string text)
         {
             if (!connectionOpen)
             {
                 openConnection();
             }  
-            
-            websocket.Send(text);
+            if (connectionOpen)
+                websocket.Send(text);
+            return connectionOpen;
         }
 
         private void openConnection()
@@ -56,9 +57,8 @@ namespace CTIclient
                     Thread.Sleep(10);
                     if (connectionOpen) break;                
                 }
-                if (!connectionOpen) MessageBox.Show("Connection error");               
-                keepAlive(true);
-            }
+                keepAlive(connectionOpen);
+            }            
         }
 
         public void closeConnection()
@@ -84,7 +84,7 @@ namespace CTIclient
 
         void websocket_Error(object sender, SuperSocket.ClientEngine.ErrorEventArgs e)
         {
-            MessageBox.Show("Error!" + e.Exception.Message);
+            // MessageBox.Show("Error!" + e.Exception.Message);
         }
 
         void websocket_MessageReceived(object sender, MessageReceivedEventArgs e)
