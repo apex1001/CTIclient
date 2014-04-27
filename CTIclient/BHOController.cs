@@ -18,8 +18,10 @@ using System.ComponentModel;
 using System.Collections;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Windows.Forms;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
@@ -43,24 +45,26 @@ namespace CTIclient
         private CommandObject commandObject; 
         private CallControlView callControlView;
         private SettingsView settingsView;
-        private Dictionary<string, ICTIView> viewList;        
+        private Dictionary<String, ICTIView> viewList;
+        private Dictionary<String, String> settingsList;    
         private String[][] extensionList;
-        
-        private string url = "ws://localhost:7777/";
-        private string status;
-        private string from;
-        private string pin;
-        private string user;
+        private String filePath;
+        private String ccsUrl;
+        private String user;
+        private String status = "";
+        private String from = "";
+        private String to = "";
+        private String pin = "";
 
-        // Call status constants from the sipXecs platform.
-        private const string CallSetup = "Early Dialog";
-        private const string CallConnected = "Confirmed Dialog";
-        private const string CallTerminated = "Terminated Dialog";
-        private const string CallBusy = "Busy Dialog";
+        // Call status constants
+        private String CallSetup;
+        private String CallConnected;
+        private String CallTerminated;
+        private String CallBusy;
 
-        //Shared 128 bit Key and IV here
-        private const string sKy = "lkirwf897+22#bbt"; //16 chr shared ascii string (16 * 8 = 128 bit)
-        private const string sIV = "741952hheeyy66#c"; //16 chr shared ascii string (16 * 8 = 128 bit)
+        //Shared 128 bit Key and IV 
+        private String sKy; 
+        private String sIV; 
 
         // SendMessage from Win32 API. Needed for handling accelerator/control keys in text/combobox
         [DllImport("user32.dll")]
@@ -69,21 +73,24 @@ namespace CTIclient
         public static extern int TranslateMessage(ref MSG lpMsg);
         [DllImport("user32", EntryPoint = "DispatchMessage")]
         static extern bool DispatchMessage(ref MSG msg);
-
+        
         /**
          * CallControlView constructor
          * 
          */
         public BHOController()
         {
+            // Read the settings file
+            readSettingsFile();
+            
             // Init DOMChanger & ADuser
             domChanger = new DOMChanger(this);
 
             // Init view list & views            
             viewList = new Dictionary<string, ICTIView>();            
+            settingsView = new SettingsView(this);
             callControlView = new CallControlView(this);
             initCallControlView();
-            settingsView = new SettingsView(this);
             //historyView = new HistoryView(this);  
 
             // Attach explorer & document
@@ -98,7 +105,7 @@ namespace CTIclient
          */
         public void receiveCommand(string message)
         {
-            commandObject = Util.fromJSON(message);
+            this.commandObject = Util.fromJSON(message);
             string command = commandObject.Command.ToString();
             string callStatus = commandObject.Status.ToString();
 
@@ -113,19 +120,22 @@ namespace CTIclient
             if (command.Equals("call") && callStatus.Equals(CallTerminated))
             {
                 this.status = CallTerminated;
-                hangup(commandObject.To.ToString());
+                hangup();
+                this.to = "";
             }
 
             if (command.Equals("call") && callStatus.Equals(CallBusy))
             {
                 MessageBox.Show("Toestel is in gesprek.", "Melding");
                 this.status = CallTerminated;
-                hangup(commandObject.To.ToString());
+                hangup();
+                this.to = "";
             }
 
             if (command.Equals("call") && callStatus.Equals(CallConnected))
             {
                 this.status = CallConnected;
+                this.to = commandObject.To;
                 doViewUpdate("callControlView");
             }            
         }
@@ -138,14 +148,21 @@ namespace CTIclient
          */
         public void dial(String to)
         {
-            this.status = CallSetup;
-            commandObject.From = this.from;
-            commandObject.To = Util.CleanPhoneNumber(to);
-            commandObject.Command = "call";
-            commandObject.Status = this.status;
-            commandObject.Value = new String[0][];
-            sendCommand(commandObject);
-            doViewUpdate("callControlView");
+            if (!this.status.Equals(CallConnected))
+            {            
+                this.status = CallSetup;
+                this.to = to;
+
+                // Create commandobject
+                commandObject.From = this.from;
+                commandObject.To = Util.CleanPhoneNumber(to);
+                commandObject.Pin = this.pin;
+                commandObject.Command = "call";
+                commandObject.Status = this.status;
+                commandObject.Value = new String[0][];
+                sendCommand(commandObject);
+                doViewUpdate("callControlView");
+            }
         }
 
         /**
@@ -154,11 +171,17 @@ namespace CTIclient
          * @param to number
          * 
          */
-        public void hangup(String to)
+        public void hangup()
         {
+            commandObject.Command = "terminate";
             commandObject.Status = CallTerminated;
-            wsClient.closeConnection();
-            doViewUpdate("callControlView");
+            commandObject.From = this.from;
+            commandObject.To = this.to;
+            sendCommand(commandObject);
+            Thread.Sleep(500);
+
+            // Clear call status
+            clearCallStatus();
         }
 
         /**
@@ -170,8 +193,41 @@ namespace CTIclient
          */
         public void transfer(String to, String target)
         {
-            MessageBox.Show(to + " " + target);
+            if(this.status.Equals(CallConnected) && !target.Equals(this.to) && !target.Equals(this.from))
+            {
+                commandObject.Command = "transfer";            
+                commandObject.From = this.from;
+                commandObject.To = to;
+                commandObject.Target = target;
+                sendCommand(commandObject);
+                Thread.Sleep(500);
+
+                // Clear call status
+                clearCallStatus();                ;
+            }
         }
+
+        /**
+         * Clear call status & close connection
+         * 
+         */
+        private void clearCallStatus()
+        {
+            // Clear call status
+            this.status = CallTerminated;
+            this.to = "";              
+            
+            // Clear commandObject
+            commandObject.Command = "terminate";
+            commandObject.Status = CallTerminated;
+            commandObject.To = "";
+            commandObject.Target = "";
+
+            // Close connection
+            wsClient.closeConnection();
+            doViewUpdate("callControlView");
+        }
+
 
         /**
          * Show settings view
@@ -243,7 +299,7 @@ namespace CTIclient
             // Create websocket client
             try
             {
-                this.wsClient = new WebSocketClient(this, url);
+                this.wsClient = new WebSocketClient(this, this.ccsUrl);
             }
             catch //(Exception ex) 
             { 
@@ -323,7 +379,7 @@ namespace CTIclient
             this.user = adUser.getUserName();
                         
             // Create command object
-            this.commandObject = new CommandObject(command: "getSettings", user: user);
+            this.commandObject = new CommandObject(command: "getSettings", user: user, pin: pin, from: from);
             sendCommand(commandObject);
         }
 
@@ -356,9 +412,27 @@ namespace CTIclient
         public void deleteSettings(String[][] deletedExtensionList)
         {            
             // Create command object
-            this.commandObject = new CommandObject(command: "deleteSettings", from: from, user: user, value: deletedExtensionList);
+            this.commandObject = new CommandObject(command: "deleteSettings", from: from, user: user, pin: pin, value: deletedExtensionList);
             sendCommand(commandObject);
             wsClient.closeConnection();
+        }
+
+        /**
+         * Read and apply the settings file
+         * 
+         */
+        private void readSettingsFile()
+        {
+            String programPath = System.Environment.GetFolderPath(System.Environment.SpecialFolder.ProgramFiles);            
+            this.filePath = programPath + "\\CTIclient\\";                  
+            this.settingsList = Util.parseSettingsFile(this.filePath + "settings.ini");
+            this.ccsUrl = "ws://" + this.settingsList["ccsHost"] + ":" + this.settingsList["ccsPort"] + "/";
+            this.sIV = this.settingsList["sIV"];
+            this.sKy = this.settingsList["sKy"];
+            this.CallSetup = this.settingsList["CallSetup"];
+            this.CallConnected = this.settingsList["CallConnected"];
+            this.CallTerminated = this.settingsList["CallTerminated"];
+            this.CallBusy = this.settingsList["CallBusy"];
         }
         
         /**

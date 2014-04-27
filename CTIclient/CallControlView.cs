@@ -42,15 +42,11 @@ namespace CTIclient
         private ToolStripButton transferButton;
 
         private const string CallConnected = "Confirmed Dialog";
-        //private string from;
-        //private string to;
-        //private string target;
-        //private string value;
         
         public CallControlView(BHOController toolbar)
         {
             this.toolbar = toolbar;
-            this.controller = toolbar;           
+            this.controller = toolbar;            
         }
 
         /**
@@ -60,6 +56,7 @@ namespace CTIclient
         public void update()
         {
             this.commandObject = controller.getCommandObject();
+            comboBox.Items.Clear();
             comboBox.Items.AddRange(new object[] { commandObject.To });
             comboBox.Text = commandObject.To;
 
@@ -75,8 +72,11 @@ namespace CTIclient
           * 
           */
         private void offHookButton_Click(object sender, System.EventArgs e)
-        {
-            controller.dial(comboBox.Text);
+        {                     
+            if (!comboBox.Text.Equals("") && comboBox.Text.Length > 2)
+            {
+                controller.dial(comboBox.Text);
+            }
         }
 
         /**
@@ -85,8 +85,8 @@ namespace CTIclient
          *       
          */
         private void onHookButton_Click(object sender, System.EventArgs e)
-        {
-            controller.hangup(comboBox.Text);
+        { 
+            controller.hangup();
         }
 
         /**
@@ -96,9 +96,10 @@ namespace CTIclient
          */
         private void transferButton_Click(object sender, System.EventArgs e)
         {
-            if (comboBox.Items.Count == 2)
+            
+            if (comboBox.Items.Count > 0)
             {
-                controller.transfer(comboBox.Items[0].ToString(), comboBox.Items[1].ToString());
+                controller.transfer(comboBox.Items[0].ToString(), comboBox.Text);
             }
         }
    

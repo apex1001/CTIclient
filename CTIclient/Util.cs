@@ -107,5 +107,30 @@ namespace CTIclient
            newArray[array.Length] = item;
            return newArray;
         }
+
+        /**
+         * Parses a settings file into a dictionary with 
+         * key / value pairs
+         * 
+         * @param filename
+         * @return dicitionary
+         * 
+         */
+        public static Dictionary<String, String> parseSettingsFile(String fileName)
+        {        
+            ArrayList inputText = FileReader.read(fileName);           
+            if (inputText != null)
+            {
+                Dictionary<String, String> settingsList = new Dictionary<String, String>();
+                foreach (String line in inputText)
+                {
+                    if (line.Equals("") || line.StartsWith(";") || line.StartsWith(" ")) continue;
+                    String[] kvString = line.Split(new Char[] {'='});                    
+                    settingsList.Add(kvString.GetValue(0).ToString().Trim(), kvString.GetValue(1).ToString().Trim());
+                }               
+                return settingsList;
+            }            
+            return null;
+        }
     }
 }

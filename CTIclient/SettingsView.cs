@@ -63,6 +63,7 @@ namespace CTIclient
                 this.extensionList[i][2] = value;
             }
             this.controller.updateSettings(this.extensionList);
+            Thread.Sleep(100);
 
             // Save any deleted settings
             if (this.deletedExtensionList != null && this.deletedExtensionList.Length > 0)

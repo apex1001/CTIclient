@@ -71,6 +71,7 @@
     <Compile Include="CallControlView.cs" />
     <Compile Include="CommandObject.cs" />
     <Compile Include="DOMChanger.cs" />
+    <Compile Include="FileReader.cs" />
     <Compile Include="ICTIView.cs" />
     <Compile Include="IObjectWithSite.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
