@@ -22,13 +22,6 @@ namespace CTIclient
         {
             try
             {
-
-               // if (!File.Exists(fileName))
-               // {
-               //     MessageBox.Show("Bestand {0} bestaat niet!", fileName);
-               //     return null;
-               // }
-
                 ArrayList text = new ArrayList();
                 StreamReader reader = File.OpenText(fileName);                
                 {

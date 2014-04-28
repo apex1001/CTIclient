@@ -202,7 +202,7 @@ namespace CTIclient
 
                 this.tableLayoutPanel.RowCount = rowCount;
                 this.tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 25F));
-
+               
                 // Add rows and init row elements
                 for (int i = 0; i < extensionCount; i++)
                 {
@@ -245,6 +245,7 @@ namespace CTIclient
                     this.removeButtons[i].Click += new EventHandler(removeButton_Click);
 
                 }
+
                 // Initialize the other elements 
 
                 this.tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 30F));
@@ -333,7 +334,7 @@ namespace CTIclient
                 this.tableLayoutPanel.Controls.Add(this.label1, 0, 0);
                 this.tableLayoutPanel.Controls.Add(this.label2, 1, 0);
                 this.tableLayoutPanel.Controls.Add(this.label3, 2, 0);
-
+   
                 // Add elements to table
                 for (int i = 0; i < extensionCount; i++)
                 {
@@ -387,9 +388,9 @@ namespace CTIclient
                 }
                 if (!primary) this.radioButtons[0].Checked = true;
             }
-            catch // (Exception e)
+            catch (Exception e)
             {
-                // MessageBox.Show(e.Message + e.StackTrace);
+                 MessageBox.Show(e.Message + e.StackTrace);
             }        
         }
 

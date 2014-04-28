@@ -87,10 +87,10 @@ namespace CTIclient
             domChanger = new DOMChanger(this);
 
             // Init view list & views            
-            viewList = new Dictionary<string, ICTIView>();            
-            settingsView = new SettingsView(this);
+            viewList = new Dictionary<string, ICTIView>();           
             callControlView = new CallControlView(this);
             initCallControlView();
+            settingsView = new SettingsView(this);
             //historyView = new HistoryView(this);  
 
             // Attach explorer & document
@@ -148,8 +148,18 @@ namespace CTIclient
          */
         public void dial(String to)
         {
-            if (!this.status.Equals(CallConnected))
-            {            
+            if (this.status.Equals(CallConnected))
+            {
+                DialogResult dialogResult = MessageBox.Show(
+                     "Er is al een gesprek. Wilt u doorverbinden naar het gekozen nummer?",
+                     "Melding", MessageBoxButtons.YesNo);
+                if (dialogResult == DialogResult.Yes)
+                {
+                    transfer(this.to, Util.CleanPhoneNumber(to));
+                }
+            }
+            else 
+            {
                 this.status = CallSetup;
                 this.to = to;
 
@@ -162,7 +172,7 @@ namespace CTIclient
                 commandObject.Value = new String[0][];
                 sendCommand(commandObject);
                 doViewUpdate("callControlView");
-            }
+            }            
         }
 
         /**
@@ -173,15 +183,18 @@ namespace CTIclient
          */
         public void hangup()
         {
-            commandObject.Command = "terminate";
-            commandObject.Status = CallTerminated;
-            commandObject.From = this.from;
-            commandObject.To = this.to;
-            sendCommand(commandObject);
-            Thread.Sleep(500);
+            if (!this.to.Equals(""))
+            {
+                commandObject.Command = "terminate";
+                commandObject.Status = CallTerminated;
+                commandObject.From = this.from;
+                commandObject.To = this.to;
+                sendCommand(commandObject);
+                Thread.Sleep(500);
 
-            // Clear call status
-            clearCallStatus();
+                // Clear call status
+                clearCallStatus();
+            }
         }
 
         /**
@@ -203,7 +216,7 @@ namespace CTIclient
                 Thread.Sleep(500);
 
                 // Clear call status
-                clearCallStatus();                ;
+                clearCallStatus();
             }
         }
 
@@ -256,7 +269,6 @@ namespace CTIclient
         private void sendCommand(CommandObject command)
         {            
             string json = Util.toJSON(command);
-            // MessageBox.Show(json);
             wsClient.sendMessage(json);            
             // Activate  AES later
             //wsClient.sendMessage(AESModule.EncryptRJ128(sKy, sIV, json));
@@ -301,9 +313,9 @@ namespace CTIclient
             {
                 this.wsClient = new WebSocketClient(this, this.ccsUrl);
             }
-            catch //(Exception ex) 
+            catch 
             { 
-                // MessageBox.Show("WS Error:" + ex.Message); 
+                // Do nothing. If server is down user shouldn't be bothered when opening new tab.
             }           
             
             // Init settings
@@ -423,16 +435,22 @@ namespace CTIclient
          */
         private void readSettingsFile()
         {
-            String programPath = System.Environment.GetFolderPath(System.Environment.SpecialFolder.ProgramFiles);            
-            this.filePath = programPath + "\\CTIclient\\";                  
+            String programPath = System.Environment.GetFolderPath(System.Environment.SpecialFolder.ProgramFiles);
+            this.filePath = programPath + "\\CTIclient\\";
             this.settingsList = Util.parseSettingsFile(this.filePath + "settings.ini");
-            this.ccsUrl = "ws://" + this.settingsList["ccsHost"] + ":" + this.settingsList["ccsPort"] + "/";
-            this.sIV = this.settingsList["sIV"];
-            this.sKy = this.settingsList["sKy"];
-            this.CallSetup = this.settingsList["CallSetup"];
-            this.CallConnected = this.settingsList["CallConnected"];
-            this.CallTerminated = this.settingsList["CallTerminated"];
-            this.CallBusy = this.settingsList["CallBusy"];
+            try
+            {
+                this.ccsUrl = "ws://" + this.settingsList["ccsHost"] + ":" + this.settingsList["ccsPort"] + "/";
+                this.sIV = this.settingsList["sIV"];
+                this.sKy = this.settingsList["sKy"];
+                this.CallSetup = this.settingsList["CallSetup"];
+                this.CallConnected = this.settingsList["CallConnected"];
+                this.CallTerminated = this.settingsList["CallTerminated"];
+                this.CallBusy = this.settingsList["CallBusy"];
+            }
+            catch
+            {
+            }
         }
         
         /**
