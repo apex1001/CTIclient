@@ -39,13 +39,9 @@ namespace CTIclient
          */
         public void showSettingsMenu()
         {
-            this.extensionList = controller.getExtensionList();
-            if (this.extensionList != null)
-            {
-                this.extensionCount = this.extensionList.Length;
-                InitializeComponent();
-                this.Show();
-            }                    
+            this.extensionList = controller.getExtensionList();          
+            InitializeComponent();
+            this.Show();                   
         }
 
         /**
@@ -85,7 +81,8 @@ namespace CTIclient
         {
             if (!this.newPhoneNumberBox.Text.Equals(""))
             {
-                String[] item = new String[this.extensionList[0].Length];
+                int itemLength = 6;
+                String[] item = new String[itemLength];
                 item[0] = null;
                 item[1] = this.newPhoneNumberBox.Text.Trim();
                 item[3] = this.controller.getUsername();
@@ -95,8 +92,8 @@ namespace CTIclient
                 if (this.newRadioButton.Checked) item[2] = "t";
 
                 String[][] tempArray = new String[1][];
-                this.extensionList = Util.ArrayAddItem(item, this.extensionList);
-                this.InitializeComponent();
+                this.extensionList = Util.ArrayAddItem(item, this.extensionList, itemLength);
+                this.InitializeComponent();                
             }           
         }
 
@@ -120,7 +117,7 @@ namespace CTIclient
             }
             else
             {
-                this.deletedExtensionList = Util.ArrayAddItem(this.extensionList[index], this.deletedExtensionList);
+                this.deletedExtensionList = Util.ArrayAddItem(this.extensionList[index], this.deletedExtensionList, this.extensionList[0].Length);
             }
             
             this.extensionList = Util.ArrayRemoveAt(index, this.extensionList);           
@@ -145,11 +142,8 @@ namespace CTIclient
          */
         protected override void Dispose(bool disposing)
         {
-            if (this.extensionList != null)
-            {
-                this.Hide();
-                this.InitializeComponent();
-            }
+            this.Hide();
+            this.InitializeComponent();
         }
 
         /**
@@ -168,26 +162,38 @@ namespace CTIclient
          */
         private void InitializeComponent()
         {
-            this.Controls.Clear();               
-            try
+            if (this.extensionList == null)
             {
+                this.extensionList = new String[0][];
+                this.extensionCount = 0;
+            }
+            else
+            {                
+                this.Controls.Clear();
                 this.extensionCount = this.extensionList.Length;
+            }
+
+            try
+            {                
                 int rowCount = this.extensionList.Length + 5;
                 string mask = "9999999999";
                 string pinMask = "9999";
 
-                // Init all the element arrays
-                this.phoneNumberBoxes = new MaskedTextBox[extensionCount];
-                this.pinBoxes = new MaskedTextBox[extensionCount];
-                this.radioButtons = new RadioButton[extensionCount];
-                this.removeButtons = new Button[extensionCount];
+                if (this.extensionCount > 0)
+                {
+                    // Init all the element arrays
+                    this.phoneNumberBoxes = new MaskedTextBox[extensionCount];
+                    this.pinBoxes = new MaskedTextBox[extensionCount];
+                    this.radioButtons = new RadioButton[extensionCount];
+                    this.removeButtons = new Button[extensionCount];
+                }
 
                 // Table settings & layout
                 this.tableLayoutPanel = new TableLayoutPanel();
                 this.tableLayoutPanel.Dock = DockStyle.Fill;
                 this.tableLayoutPanel.Location = new System.Drawing.Point(0, 0);
                 this.tableLayoutPanel.Name = "tableLayoutPanel";
-                this.tableLayoutPanel.Size = new System.Drawing.Size(350, 105 + (extensionCount * 30));
+                this.tableLayoutPanel.Size = new System.Drawing.Size(350, 135 + ((extensionCount -1) * 30));
                 this.tableLayoutPanel.Paint += new PaintEventHandler(this.tableLayoutPanel_Paint);
 
                 // Suspend layout for adding elements
@@ -202,52 +208,54 @@ namespace CTIclient
 
                 this.tableLayoutPanel.RowCount = rowCount;
                 this.tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 25F));
-               
-                // Add rows and init row elements
-                for (int i = 0; i < extensionCount; i++)
+
+                if (this.extensionCount > 0)
                 {
-                    Array extensionItems = (Array) extensionList.GetValue(i);                    
-                    this.tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 30F));
+                    // Add rows and init row elements
+                    for (int i = 0; i < extensionCount; i++)
+                    {
+                        Array extensionItems = (Array)extensionList.GetValue(i);
+                        this.tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 30F));
 
-                    // PhoneNumber textbox
-                    this.phoneNumberBoxes[i] = new MaskedTextBox();
-                    this.phoneNumberBoxes[i].Anchor = AnchorStyles.None;
-                    this.phoneNumberBoxes[i].Enabled = false;
-                    this.phoneNumberBoxes[i].Name = "phoneNumber" + i.ToString();
-                    this.phoneNumberBoxes[i].Text = extensionItems.GetValue(1).ToString();
-                    this.phoneNumberBoxes[i].Mask = mask;
-                    this.phoneNumberBoxes[i].HidePromptOnLeave = true;
+                        // PhoneNumber textbox
+                        this.phoneNumberBoxes[i] = new MaskedTextBox();
+                        this.phoneNumberBoxes[i].Anchor = AnchorStyles.None;
+                        this.phoneNumberBoxes[i].Enabled = false;
+                        this.phoneNumberBoxes[i].Name = "phoneNumber" + i.ToString();
+                        this.phoneNumberBoxes[i].Text = extensionItems.GetValue(1).ToString();
+                        this.phoneNumberBoxes[i].Mask = mask;
+                        this.phoneNumberBoxes[i].HidePromptOnLeave = true;
 
-                    // Pin textbox
-                    this.pinBoxes[i] = new MaskedTextBox();
-                    this.pinBoxes[i].Anchor = AnchorStyles.None;
-                    this.pinBoxes[i].Enabled = false;
-                    this.pinBoxes[i].Name = "pin" + i.ToString();
-                    this.pinBoxes[i].Text = extensionItems.GetValue(4).ToString();
-                    this.pinBoxes[i].Size = new System.Drawing.Size(51, 20);
-                    this.pinBoxes[i].Mask = pinMask;
-                    this.phoneNumberBoxes[i].HidePromptOnLeave = true;
- 
-                    // Radio button primary phone
-                    this.radioButtons[i] = new RadioButton();
-                    this.radioButtons[i].Anchor = AnchorStyles.None;
-                    this.radioButtons[i].Name = "radioButton" + i.ToString();
-                    this.radioButtons[i].Size = new System.Drawing.Size(14, 13);
-                    this.radioButtons[i].UseVisualStyleBackColor = true;
+                        // Pin textbox
+                        this.pinBoxes[i] = new MaskedTextBox();
+                        this.pinBoxes[i].Anchor = AnchorStyles.None;
+                        this.pinBoxes[i].Enabled = false;
+                        this.pinBoxes[i].Name = "pin" + i.ToString();
+                        this.pinBoxes[i].Text = extensionItems.GetValue(4).ToString();
+                        this.pinBoxes[i].Size = new System.Drawing.Size(51, 20);
+                        this.pinBoxes[i].Mask = pinMask;
+                        this.phoneNumberBoxes[i].HidePromptOnLeave = true;
 
-                    // Remove button
-                    this.removeButtons[i] = new Button();
-                    this.removeButtons[i].Anchor = AnchorStyles.Left;
-                    this.removeButtons[i].Name = i.ToString();
-                    this.removeButtons[i].Size = new System.Drawing.Size(75, 23);
-                    this.removeButtons[i].Text = "Verwijderen";
-                    this.removeButtons[i].UseVisualStyleBackColor = true;
-                    this.removeButtons[i].Click += new EventHandler(removeButton_Click);
+                        // Radio button primary phone
+                        this.radioButtons[i] = new RadioButton();
+                        this.radioButtons[i].Anchor = AnchorStyles.None;
+                        this.radioButtons[i].Name = "radioButton" + i.ToString();
+                        this.radioButtons[i].Size = new System.Drawing.Size(14, 13);
+                        this.radioButtons[i].UseVisualStyleBackColor = true;
 
+                        // Remove button
+                        this.removeButtons[i] = new Button();
+                        this.removeButtons[i].Anchor = AnchorStyles.Left;
+                        this.removeButtons[i].Name = i.ToString();
+                        this.removeButtons[i].Size = new System.Drawing.Size(75, 23);
+                        this.removeButtons[i].Text = "Verwijderen";
+                        this.removeButtons[i].UseVisualStyleBackColor = true;
+                        this.removeButtons[i].Click += new EventHandler(removeButton_Click);
+
+                    }
                 }
 
                 // Initialize the other elements 
-
                 this.tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 30F));
                 this.tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 10F));                
                 this.tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 30F));
@@ -298,7 +306,6 @@ namespace CTIclient
                 this.label3.AutoSize = true;
                 this.label3.Name = "label3";
                 this.label3.Size = new System.Drawing.Size(72, 13);
-                this.label3.TabIndex = 10;
                 this.label3.Text = "Primair toestel";
 
                 // saveButton  
@@ -306,7 +313,6 @@ namespace CTIclient
                 this.saveButton.Anchor = AnchorStyles.Left;
                 this.saveButton.Name = "saveButton";
                 this.saveButton.Size = new System.Drawing.Size(75, 23);
-                this.saveButton.TabIndex = 16;
                 this.saveButton.Text = "Opslaan";
                 this.saveButton.UseVisualStyleBackColor = true;
                 this.saveButton.Click += new EventHandler(saveButton_Click);
@@ -316,7 +322,6 @@ namespace CTIclient
                 this.cancelButton.Anchor = AnchorStyles.None;
                 this.cancelButton.Name = "cancelButton";
                 this.cancelButton.Size = new System.Drawing.Size(73, 23);
-                this.cancelButton.TabIndex = 15;
                 this.cancelButton.Text = "Annuleren";
                 this.cancelButton.UseVisualStyleBackColor = true;
                 this.cancelButton.Click += new EventHandler(cancelButton_Click);
@@ -333,22 +338,24 @@ namespace CTIclient
                 // Add everything to the table
                 this.tableLayoutPanel.Controls.Add(this.label1, 0, 0);
                 this.tableLayoutPanel.Controls.Add(this.label2, 1, 0);
-                this.tableLayoutPanel.Controls.Add(this.label3, 2, 0);
-   
+                this.tableLayoutPanel.Controls.Add(this.label3, 2, 0);   
+                
                 // Add elements to table
-                for (int i = 0; i < extensionCount; i++)
+                if (this.extensionCount > 0)
                 {
-                    Array extensionItems = (Array) extensionList.GetValue(i);  
-                    
-                    this.tableLayoutPanel.Controls.Add(this.phoneNumberBoxes[i], 0, i + 1);
-                    this.tableLayoutPanel.Controls.Add(this.pinBoxes[i], 1, i + 1);
-                    this.tableLayoutPanel.Controls.Add(this.radioButtons[i], 2, i + 1);
-                    if (extensionItems.GetValue(5).ToString().Equals("t"))
+                    for (int i = 0; i < extensionCount; i++)
                     {
-                        this.tableLayoutPanel.Controls.Add(this.removeButtons[i], 3, i + 1);
+                        Array extensionItems = (Array)extensionList.GetValue(i);
+                        this.tableLayoutPanel.Controls.Add(this.phoneNumberBoxes[i], 0, i + 1);
+                        this.tableLayoutPanel.Controls.Add(this.pinBoxes[i], 1, i + 1);
+                        this.tableLayoutPanel.Controls.Add(this.radioButtons[i], 2, i + 1);
+                        if (extensionItems.GetValue(5).ToString().Equals("t"))
+                        {
+                            this.tableLayoutPanel.Controls.Add(this.removeButtons[i], 3, i + 1);
+                        }
                     }
                 }
-                
+
                 this.tableLayoutPanel.Controls.Add(this.newPhoneNumberBox, 0, rowCount-4);
                 this.tableLayoutPanel.Controls.Add(this.newPinBox, 1, rowCount-4);
                 this.tableLayoutPanel.Controls.Add(this.newRadioButton, 2, rowCount-4);
@@ -360,12 +367,12 @@ namespace CTIclient
                 // Form1
                 this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
                 this.AutoScaleMode = AutoScaleMode.Font;
-                this.ClientSize = new System.Drawing.Size(350, 105 + (extensionCount * 30));
+                this.ClientSize = new System.Drawing.Size(350, 135 + ((extensionCount - 1) * 30));
                 this.Controls.Add(this.tableLayoutPanel);
                 this.MaximizeBox = false;
                 this.MinimizeBox = false;
-                this.MinimumSize = new System.Drawing.Size(365, 120 + (extensionCount * 30));
-                //this.MaximumSize = this.MinimumSize;
+                this.MinimumSize = new System.Drawing.Size(365, 170 + ((extensionCount - 1) * 30));
+                this.MaximumSize = this.MinimumSize;
                 this.Name = "Form1";
                 this.StartPosition = FormStartPosition.CenterScreen;
                 this.Text = "Instellingen";
@@ -375,18 +382,21 @@ namespace CTIclient
                 this.ResumeLayout(false);
 
                 // Set primary extension radio button
-                Boolean primary = false;
-                for (int i = 0; i < extensionCount; i++)
+                if (this.extensionCount > 0)
                 {
-                    Array extensionItems = (Array)extensionList.GetValue(i);
-                    if (extensionItems.GetValue(2).Equals("t"))
+                    Boolean primary = false;
+                    for (int i = 0; i < extensionCount; i++)
                     {
-                        this.radioButtons[i].Checked = true;
-                        primary = true;
+                        Array extensionItems = (Array)extensionList.GetValue(i);
+                        if (extensionItems.GetValue(2).Equals("t"))
+                        {
+                            this.radioButtons[i].Checked = true;
+                            primary = true;
+                        }
+
                     }
-                    
+                    if (!primary) this.radioButtons[0].Checked = true;
                 }
-                if (!primary) this.radioButtons[0].Checked = true;
             }
             catch (Exception e)
             {

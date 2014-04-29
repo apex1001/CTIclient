@@ -96,9 +96,9 @@ namespace CTIclient
          * @return the new array
          * 
          */
-        public static String[][] ArrayAddItem(String[] item, String[][] array)
+        public static String[][] ArrayAddItem(String[] item, String[][] array, int size)
         {
-            int itemSize = array[0].Length;  
+            int itemSize = size;
             String[][] newArray = new String[array.Length + 1][];
             for (int i = 0; i < array.Length; i++)
             {

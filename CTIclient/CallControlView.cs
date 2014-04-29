@@ -72,8 +72,9 @@ namespace CTIclient
           * 
           */
         private void offHookButton_Click(object sender, System.EventArgs e)
-        {                     
-            if (!comboBox.Text.Equals("") && comboBox.Text.Length > 2)
+        {
+            String text = Util.CleanPhoneNumber(comboBox.Text);
+            if (!text.Equals("") && comboBox.Text.Length > 2)
             {
                 controller.dial(comboBox.Text);
             }

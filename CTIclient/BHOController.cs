@@ -160,18 +160,25 @@ namespace CTIclient
             }
             else 
             {
-                this.status = CallSetup;
-                this.to = to;
+                if (!this.from.Equals(""))
+                {
+                    this.status = CallSetup;
+                    this.to = Util.CleanPhoneNumber(to);
 
-                // Create commandobject
-                commandObject.From = this.from;
-                commandObject.To = Util.CleanPhoneNumber(to);
-                commandObject.Pin = this.pin;
-                commandObject.Command = "call";
-                commandObject.Status = this.status;
-                commandObject.Value = new String[0][];
-                sendCommand(commandObject);
-                doViewUpdate("callControlView");
+                    // Create commandobject
+                    commandObject.From = this.from;
+                    commandObject.To = Util.CleanPhoneNumber(to);
+                    commandObject.Pin = this.pin;
+                    commandObject.Command = "call";
+                    commandObject.Status = this.status;
+                    commandObject.Value = new String[0][];
+                    sendCommand(commandObject);
+                    doViewUpdate("callControlView");
+                }
+                else
+                {
+                    MessageBox.Show("Er is geen primair toestel ingesteld!");
+                }
             }            
         }
 
@@ -402,17 +409,31 @@ namespace CTIclient
         public void updateSettings(String[][] extensionList)
         {
             this.extensionList = extensionList;
+            
+            // Check if list is empty
+            if (this.extensionList == null || this.extensionList.Length < 1)
+            {
+                this.from = "";
+                this.pin = "";
+            }            
+            
+            // Get new primary extension
             foreach (String[] item in this.extensionList)
             {
                 if (item.GetValue(2).Equals("t"))
                 {
                     this.from = item.GetValue(1).ToString();
+                    this.pin = item.GetValue(4).ToString();
                     break;
                 }                
-            }            
-            
-            // Create command object
-            this.commandObject = new CommandObject(command: "updateSettings", from: from, user: user, value: extensionList);
+            }
+
+            // Create command object and save settings
+            this.commandObject = new CommandObject(command: "updateSettings", 
+                                                   from: from, 
+                                                   user: user, 
+                                                   pin: pin, 
+                                                   value: extensionList);
             sendCommand(commandObject);
             wsClient.closeConnection();
         }
