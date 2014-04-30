@@ -13,6 +13,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Web.Script.Serialization;
 using System.Windows.Forms;
+using System.Security.Cryptography;
 
 namespace CTIclient
 {
@@ -131,6 +132,30 @@ namespace CTIclient
                 return settingsList;
             }            
             return null;
+        }
+
+        /**
+         * Get an MD5 hash from a string
+         * 
+         * @param textstring
+         * @return hashString
+         * 
+         */
+        public static String getHash(String text)
+        {
+            String hashString = "";
+            if (!text.Equals("") && text != null)
+            {
+                MD5 md5Hash = MD5.Create();
+                byte[] input = Encoding.ASCII.GetBytes(text + "C7117C");
+                byte[] output = md5Hash.ComputeHash(input);
+
+                foreach (byte part in output)
+                {
+                    hashString += part.ToString("X2");
+                }
+            }
+            return hashString;
         }
     }
 }

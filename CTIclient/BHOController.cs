@@ -395,7 +395,8 @@ namespace CTIclient
         {
             // Get current user
             this.adUser = new ADUser();
-            this.user = adUser.getUserName();
+            String sid = this.adUser.getUserSid();
+            this.user = adUser.getUserName() + "-" + Util.getHash(sid).Substring(0,8);
                         
             // Create command object
             this.commandObject = new CommandObject(command: "getSettings", user: user, pin: pin, from: from);

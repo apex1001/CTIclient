@@ -65,9 +65,20 @@ namespace CTIclient
          * @return username
          * 
          */
-        public string getUserName()
+        public String getUserName()
         {
             return this.username;
+        }
+
+        /**
+         * Return the guid
+         * 
+         * @return username
+         * 
+         */
+        public String getUserSid()
+        {
+            return WindowsIdentity.GetCurrent().User.ToString();
         }
 
         /**
@@ -76,7 +87,7 @@ namespace CTIclient
          * @return phone number
          * 
          */
-        public string getMobilePhone()
+        public String getMobilePhone()
         {
             return this.mobilePhone;
         }
