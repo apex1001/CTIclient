@@ -54,6 +54,7 @@ namespace CTIclient
         private String status = "";
         private String from = "";
         private String to = "";
+        private String target = "";
         private String pin = "";
 
         // Call status constants
@@ -119,17 +120,25 @@ namespace CTIclient
 
             if (command.Equals("call") && callStatus.Equals(CallTerminated))
             {
-                this.status = CallTerminated;
-                hangup();
+                this.status = CallTerminated;                
+                hangup(this.target);
+                hangup(this.to);
                 this.to = "";
+                this.target = "";
             }
 
             if (command.Equals("call") && callStatus.Equals(CallBusy))
             {
                 MessageBox.Show("Toestel is in gesprek.", "Melding");
-                this.status = CallTerminated;
-                hangup();
-                this.to = "";
+                if (!this.target.Equals(""))
+                {
+                    this.target = "";
+                }
+                else
+                {
+                    hangup(this.to);
+                    clearCallStatus();                                    
+                }
             }
 
             if (command.Equals("call") && callStatus.Equals(CallConnected))
@@ -148,38 +157,50 @@ namespace CTIclient
          */
         public void dial(String to)
         {
-            if (this.status.Equals(CallConnected))
-            {
-                DialogResult dialogResult = MessageBox.Show(
-                     "Er is al een gesprek. Wilt u doorverbinden naar het gekozen nummer?",
-                     "Melding", MessageBoxButtons.YesNo);
-                if (dialogResult == DialogResult.Yes)
-                {
-                    transfer(this.to, Util.CleanPhoneNumber(to));
-                }
-            }
-            else 
-            {
-                if (!this.from.Equals(""))
-                {
-                    this.status = CallSetup;
-                    this.to = Util.CleanPhoneNumber(to);
+            to = Util.CleanPhoneNumber(to);
 
-                    // Create commandobject
-                    commandObject.From = this.from;
-                    commandObject.To = Util.CleanPhoneNumber(to);
-                    commandObject.Pin = this.pin;
-                    commandObject.Command = "call";
-                    commandObject.Status = this.status;
-                    commandObject.Value = new String[0][];
-                    sendCommand(commandObject);
-                    doViewUpdate("callControlView");
+            if (!to.Equals("") && !this.from.Equals("") && this.target.Equals(""))
+            {
+                // Check if there is a connected call, offer to transfer
+                if (this.status.Equals(CallConnected))
+                {
+                    DialogResult dialogResult = MessageBox.Show(
+                         "Er is al een gesprek. Wilt u doorverbinden naar het gekozen nummer?",
+                         "Melding", MessageBoxButtons.YesNo);
+                    if (dialogResult == DialogResult.Yes)
+                    {
+                        transfer(this.to, to);
+                        return;
+                    }
+
+                    // User wants second call, set second call as target
+                    else
+                    {
+                        this.target = to;                        
+                    }
                 }
+
+                // If there is no current call
                 else
                 {
-                    MessageBox.Show("Er is geen primair toestel ingesteld!");
+                    this.status = CallSetup;
+                    this.to = to;
                 }
-            }            
+
+                // Create commandobject
+                commandObject.From = this.from;
+                commandObject.To = this.to;
+                commandObject.Target = this.target;
+                commandObject.Pin = this.pin;
+                commandObject.Command = "call";
+                commandObject.Status = this.status;
+                commandObject.Value = new String[0][];
+                sendCommand(commandObject);
+                doViewUpdate("callControlView");
+            }
+
+            else if (this.from.Equals(""))
+                MessageBox.Show("Er is geen primair toestel ingesteld!");
         }
 
         /**
@@ -188,19 +209,42 @@ namespace CTIclient
          * @param to number
          * 
          */
-        public void hangup()
+        public void hangup(String to)
         {
-            if (!this.to.Equals(""))
+            if (!to.Equals(""))  
             {
                 commandObject.Command = "terminate";
                 commandObject.Status = CallTerminated;
                 commandObject.From = this.from;
-                commandObject.To = this.to;
+                commandObject.To = to;
+                commandObject.Target = "";
                 sendCommand(commandObject);
                 Thread.Sleep(500);
 
-                // Clear call status
-                clearCallStatus();
+                // Make 'target' the new 'to' since it is the only call left
+                if (to.Equals(this.to) && !this.target.Equals(""))
+                {                    
+                    this.to = this.target;
+                    this.target = "";
+                    commandObject.To = this.to;
+                    commandObject.Target = "";
+                    doViewUpdate("callControlView");
+                }
+
+                // Clear 'target', leaving only 'to'.
+                else if (to.Equals(this.target))
+                {
+                    this.target = "";
+                    commandObject.Target = "";
+                    commandObject.To = this.to;
+                    doViewUpdate("callControlView");
+                }
+
+                else
+                {
+                    // If there was only one call clear everything
+                    clearCallStatus();
+                }
             }
         }
 
@@ -235,7 +279,8 @@ namespace CTIclient
         {
             // Clear call status
             this.status = CallTerminated;
-            this.to = "";              
+            this.to = "";
+            this.target = ""; 
             
             // Clear commandObject
             commandObject.Command = "terminate";

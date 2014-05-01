@@ -57,8 +57,14 @@ namespace CTIclient
         {
             this.commandObject = controller.getCommandObject();
             comboBox.Items.Clear();
-            comboBox.Items.AddRange(new object[] { commandObject.To });
+            comboBox.Items.Add(commandObject.To);
             comboBox.Text = commandObject.To;
+
+            if (!commandObject.Target.Equals(""))
+            {
+                comboBox.Items.Add(commandObject.Target);
+                comboBox.Text = commandObject.Target;
+            }           
 
             string status = this.commandObject.Status.ToString();
             enableButtons(status.Equals(CallConnected));
@@ -86,8 +92,8 @@ namespace CTIclient
          *       
          */
         private void onHookButton_Click(object sender, System.EventArgs e)
-        { 
-            controller.hangup();
+        {
+            controller.hangup(comboBox.Text);
         }
 
         /**
@@ -98,9 +104,13 @@ namespace CTIclient
         private void transferButton_Click(object sender, System.EventArgs e)
         {
             
-            if (comboBox.Items.Count > 0)
+            if (comboBox.Items.Count == 1)
             {
                 controller.transfer(comboBox.Items[0].ToString(), comboBox.Text);
+            }
+            if (comboBox.Items.Count == 2)
+            {
+                controller.transfer(comboBox.Items[0].ToString(), comboBox.Items[1].ToString());
             }
         }
    
