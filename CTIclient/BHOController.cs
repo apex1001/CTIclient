@@ -95,7 +95,7 @@ namespace CTIclient
             //historyView = new HistoryView(this);  
 
             // Attach explorer & document
-            this.ExplorerAttached += new EventHandler(CallControlView_ExplorerAttached);
+            this.ExplorerAttached += new EventHandler(CallControlView_ExplorerAttached);            
         }
 
         /**
@@ -106,47 +106,48 @@ namespace CTIclient
          */
         public void receiveCommand(string message)
         {
-            this.commandObject = Util.fromJSON(message);
-            string command = commandObject.Command.ToString();
-            string callStatus = commandObject.Status.ToString();
-
-            if (command.Equals("settingsList"))
+            CommandObject tempObject = Util.fromJSON(message);            
+            if (tempObject != null)
             {
-                this.from = commandObject.From;
-                this.pin = commandObject.Pin;
-                this.extensionList = commandObject.Value;
-                wsClient.closeConnection();
-            }
+                this.commandObject = tempObject;
+                string command = commandObject.Command.ToString();
+                string callStatus = commandObject.Status.ToString();
 
-            if (command.Equals("call") && callStatus.Equals(CallTerminated))
-            {
-                this.status = CallTerminated;                
-                hangup(this.target);
-                hangup(this.to);
-                this.to = "";
-                this.target = "";
-            }
-
-            if (command.Equals("call") && callStatus.Equals(CallBusy))
-            {
-                MessageBox.Show("Toestel is in gesprek.", "Melding");
-                if (!this.target.Equals(""))
+                if (command.Equals("settingsList"))
                 {
-                    this.target = "";
+                    this.from = commandObject.From;
+                    this.pin = commandObject.Pin;
+                    this.extensionList = commandObject.Value;
+                    wsClient.closeConnection();
                 }
-                else
+
+                if (command.Equals("call") && callStatus.Equals(CallTerminated))
                 {
-                    hangup(this.to);
-                    clearCallStatus();                                    
+                    String[] value = (String[]) commandObject.Value.GetValue(0);
+                    String extension = value.GetValue(0).ToString();
+                    hangup(extension, false);
+                }
+
+                if (command.Equals("call") && callStatus.Equals(CallBusy))
+                {
+                    MessageBox.Show("Toestel is in gesprek.", "Melding");
+                    if (!this.target.Equals("") && this.status.Equals(CallConnected))
+                    {                        
+                        hangup(this.target, false);        
+                    }
+                    else
+                    {                        
+                        clearCallStatus();
+                    }
+                }
+
+                if (command.Equals("call") && callStatus.Equals(CallConnected))
+                {
+                    this.status = CallConnected;
+                    this.to = commandObject.To;
+                    doViewUpdate("callControlView");
                 }
             }
-
-            if (command.Equals("call") && callStatus.Equals(CallConnected))
-            {
-                this.status = CallConnected;
-                this.to = commandObject.To;
-                doViewUpdate("callControlView");
-            }            
         }
 
         /**
@@ -209,42 +210,50 @@ namespace CTIclient
          * @param to number
          * 
          */
-        public void hangup(String to)
+        public void hangup(String to, Boolean terminateLine = true)
         {
-            if (!to.Equals(""))  
+            if (this.status.Equals(CallConnected) && !to.Equals(""))
             {
-                commandObject.Command = "terminate";
-                commandObject.Status = CallTerminated;
-                commandObject.From = this.from;
-                commandObject.To = to;
-                commandObject.Target = "";
-                sendCommand(commandObject);
-                Thread.Sleep(500);
+                // Terminate the connection if offhook was pressed (default)
+                    if (terminateLine)
+                    {
+                        // Terminate the given line
+                        commandObject.Command = "terminate";
+                        commandObject.Status = CallTerminated;
+                        commandObject.From = this.from;
+                        commandObject.To = to;
+                        commandObject.Target = "";
+                        sendCommand(commandObject);
+                        Thread.Sleep(500);
+                    }
 
-                // Make 'target' the new 'to' since it is the only call left
-                if (to.Equals(this.to) && !this.target.Equals(""))
-                {                    
-                    this.to = this.target;
-                    this.target = "";
-                    commandObject.To = this.to;
-                    commandObject.Target = "";
-                    doViewUpdate("callControlView");
-                }
+                    // Make 'target' the new 'to' if it is the only call left
+                    if (to.Equals(this.to) && !this.target.Equals(""))
+                    {
+                        this.to = this.target;
+                        this.target = "";
+                        commandObject.To = this.to;
+                        commandObject.Target = "";
+                        commandObject.Status = CallConnected;
+                        doViewUpdate("callControlView");
+                    }
 
-                // Clear 'target', leaving only 'to'.
-                else if (to.Equals(this.target))
-                {
-                    this.target = "";
-                    commandObject.Target = "";
-                    commandObject.To = this.to;
-                    doViewUpdate("callControlView");
-                }
+                    // Clear 'target', leaving only 'to'.
+                    else if (to.Equals(this.target))
+                    {
+                        this.target = "";
+                        commandObject.Target = "";
+                        commandObject.To = this.to;
+                        commandObject.Status = CallConnected;
+                        doViewUpdate("callControlView");
+                    }
 
-                else
-                {
-                    // If there was only one call clear everything
-                    clearCallStatus();
-                }
+                    else
+                    {
+                        // If there was only one call clear everything
+                        clearCallStatus();
+                    }
+                
             }
         }
 
