@@ -45,9 +45,11 @@ namespace CTIclient
         private CommandObject commandObject; 
         private CallControlView callControlView;
         private SettingsView settingsView;
+        private HistoryView historyView;
         private Dictionary<String, ICTIView> viewList;
         private Dictionary<String, String> settingsList;    
         private String[][] extensionList;
+        private String[][] historyList;
         private String filePath;
         private String ccsUrl;
         private String user;
@@ -92,7 +94,7 @@ namespace CTIclient
             callControlView = new CallControlView(this);
             initCallControlView();
             settingsView = new SettingsView(this);
-            //historyView = new HistoryView(this);  
+            historyView = new HistoryView(this);  
 
             // Attach explorer & document
             this.ExplorerAttached += new EventHandler(CallControlView_ExplorerAttached);            
@@ -119,6 +121,12 @@ namespace CTIclient
                     this.pin = commandObject.Pin;
                     this.extensionList = commandObject.Value;
                     wsClient.closeConnection();
+                }
+
+                if (command.Equals("userHistory"))
+                {
+                    this.historyList = commandObject.Value;
+                    wsClient.closeConnection();                    
                 }
 
                 if (command.Equals("call") && callStatus.Equals(CallTerminated))
@@ -324,16 +332,19 @@ namespace CTIclient
          */
         public void showHistory()
         {
+            this.historyList = null;
             commandObject.Command = "getHistory";
             commandObject.User = this.user;
             commandObject.Value = null;
             sendCommand(commandObject);
 
-            Util.showMessageBox("Request send 2..","Titelofzo",null);
-            //MessageBox.Show("Request send..");
-
-            // Close connection
-            wsClient.closeConnection();
+            // Wait for list to be loaded
+            for (int i = 0; i < 60; i++)
+            {
+                if (this.historyList != null) break;
+                Thread.Sleep(50);
+            }
+            historyView.showHistoryView();
         }
 
         /**
@@ -542,6 +553,17 @@ namespace CTIclient
             catch
             {
             }
+        }
+
+        /**
+         * Get historyList from server
+         * 
+         * @return historyList array
+         * 
+         */
+        public String[][] getHistoryList()
+        {
+            return this.historyList;
         }
         
         /**

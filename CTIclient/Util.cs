@@ -20,7 +20,7 @@ namespace CTIclient
 {
     static class Util
     {
-        // Needed imports for terminal services check & messagebox        
+        // Imports for terminal services check & messagebox        
         [DllImport("user32.dll", EntryPoint = ("GetSystemMetrics"))]
         private static extern int GetSystemMetrics(int nIndex);
 
