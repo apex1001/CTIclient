@@ -36,7 +36,7 @@ namespace CTIclient
             }
             catch (Exception e)
             {
-                MessageBox.Show(e.Message);
+                Util.showMessageBox(e.Message);
             }
             return null;
         }

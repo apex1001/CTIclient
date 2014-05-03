@@ -400,7 +400,7 @@ namespace CTIclient
             }
             catch (Exception e)
             {
-                 MessageBox.Show(e.Message + e.StackTrace);
+                 Util.showMessageBox(e.Message + e.StackTrace);
             }        
         }
 

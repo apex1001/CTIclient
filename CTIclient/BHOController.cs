@@ -74,7 +74,7 @@ namespace CTIclient
         public static extern int TranslateMessage(ref MSG lpMsg);
         [DllImport("user32", EntryPoint = "DispatchMessage")]
         static extern bool DispatchMessage(ref MSG msg);
-        
+              
         /**
          * CallControlView constructor
          * 
@@ -130,7 +130,7 @@ namespace CTIclient
 
                 if (command.Equals("call") && callStatus.Equals(CallBusy))
                 {
-                    MessageBox.Show("Toestel is in gesprek.", "Melding");
+                    Util.showMessageBox("Toestel is in gesprek.", "Melding");
                     if (!this.target.Equals("") && this.status.Equals(CallConnected))
                     {                        
                         hangup(this.target, false);        
@@ -165,9 +165,9 @@ namespace CTIclient
                 // Check if there is a connected call, offer to transfer
                 if (this.status.Equals(CallConnected))
                 {
-                    DialogResult dialogResult = MessageBox.Show(
+                    DialogResult dialogResult = Util.showMessageBox(
                          "Er is al een gesprek. Wilt u doorverbinden naar het gekozen nummer?",
-                         "Melding", MessageBoxButtons.YesNo);
+                         "Melding", MessageBoxButtons.YesNoCancel);
                     if (dialogResult == DialogResult.Yes)
                     {
                         transfer(this.to, to);
@@ -175,9 +175,15 @@ namespace CTIclient
                     }
 
                     // User wants second call, set second call as target
-                    else
+                    if (dialogResult == DialogResult.No)
                     {
                         this.target = to;                        
+                    }
+
+                    // User wants to cancel
+                    if (dialogResult == DialogResult.Cancel)
+                    {
+                        return;
                     }
                 }
 
@@ -201,7 +207,7 @@ namespace CTIclient
             }
 
             else if (this.from.Equals(""))
-                MessageBox.Show("Er is geen primair toestel ingesteld!");
+                Util.showMessageBox("Er is geen primair toestel ingesteld!");
         }
 
         /**
@@ -212,7 +218,7 @@ namespace CTIclient
          */
         public void hangup(String to, Boolean terminateLine = true)
         {
-            if (this.status.Equals(CallConnected) && !to.Equals(""))
+            if (this.status.Equals(CallConnected) && !to.Equals("") && (to.Equals(this.to) || to.Equals(this.target)))
             {
                 // Terminate the connection if offhook was pressed (default)
                     if (terminateLine)
@@ -318,7 +324,16 @@ namespace CTIclient
          */
         public void showHistory()
         {
-            MessageBox.Show("history!");
+            commandObject.Command = "getHistory";
+            commandObject.User = this.user;
+            commandObject.Value = null;
+            sendCommand(commandObject);
+
+            Util.showMessageBox("Request send 2..","Titelofzo",null);
+            //MessageBox.Show("Request send..");
+
+            // Close connection
+            wsClient.closeConnection();
         }
 
         /**
@@ -430,7 +445,7 @@ namespace CTIclient
            
             // Add everything to CallControl toolbar
             this.Controls.AddRange(new Control[] { callControlView.InitializeComponent() });
-            this.MinSize = new Size(210, 32);
+            this.MinSize = new Size(220, 32);
             this.BackColor = Color.Transparent;
 
             // Perform final layout
