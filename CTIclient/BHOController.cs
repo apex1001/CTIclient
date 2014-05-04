@@ -27,13 +27,14 @@ using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
 using BandObjectLib;
 
-/**
- * BHOController class
- * Controls the CTI client
- * 
- */
 namespace CTIclient
 {
+
+    /**
+     * BHOController class
+     * Controls the CTI client
+     * 
+     */
     [Guid("E0DE0DE0-46D4-4a98-AF68-0333EA26E113")]
     [BandObject("CTIClient", BandObjectStyle.Horizontal | BandObjectStyle.ExplorerToolbar, HelpText = "CTIclient")]
     public class BHOController : BandObject
@@ -50,14 +51,17 @@ namespace CTIclient
         private Dictionary<String, String> settingsList;    
         private String[][] extensionList;
         private String[][] historyList;
+
         private String filePath;
         private String ccsUrl;
+        private String domain;
         private String user;
         private String status = "";
         private String from = "";
         private String to = "";
         private String target = "";
         private String pin = "";
+        private String role = "";
 
         // Call status constants
         private String CallSetup;
@@ -89,15 +93,20 @@ namespace CTIclient
             // Init DOMChanger & ADuser
             domChanger = new DOMChanger(this);
 
-            // Init view list & views            
-            viewList = new Dictionary<string, ICTIView>();           
+            // Init view views         
             callControlView = new CallControlView(this);
             initCallControlView();
             settingsView = new SettingsView(this);
-            historyView = new HistoryView(this);  
+            historyView = new HistoryView(this);
+            
+            // Add views to the view list
+            viewList = new Dictionary<string, ICTIView>();  
+            viewList.Add("callControlView", callControlView);
+            viewList.Add("settingsView", settingsView);
+            viewList.Add("historyView", historyView);
 
-            // Attach explorer & document
-            this.ExplorerAttached += new EventHandler(CallControlView_ExplorerAttached);            
+            // Attach explorer & document event
+            this.ExplorerAttached += new EventHandler(CallControlView_ExplorerAttached);
         }
 
         /**
@@ -119,14 +128,29 @@ namespace CTIclient
                 {
                     this.from = commandObject.From;
                     this.pin = commandObject.Pin;
-                    this.extensionList = commandObject.Value;
+                    this.role = commandObject.Role;                    
+                    this.extensionList = commandObject.Value; 
                     wsClient.closeConnection();
+                    doViewUpdate("settingsView");
+
+                    if (this.role.Equals("admin"))
+                        callControlView.addAdminItem();
                 }
 
                 if (command.Equals("userHistory"))
                 {
                     this.historyList = commandObject.Value;
-                    wsClient.closeConnection();                    
+                    wsClient.closeConnection();
+                    Thread.Sleep(100);
+                    doViewUpdate("historyView");
+                }
+
+                if (command.Equals("adminUrl"))
+                {
+                    String[][] valueArray = commandObject.Value;
+                    String adminUrl = valueArray[0][0];
+                    wsClient.closeConnection();
+                    navigateToAdmin(adminUrl);
                 }
 
                 if (command.Equals("call") && callStatus.Equals(CallTerminated))
@@ -337,14 +361,30 @@ namespace CTIclient
             commandObject.User = this.user;
             commandObject.Value = null;
             sendCommand(commandObject);
+        }
 
-            // Wait for list to be loaded
-            for (int i = 0; i < 60; i++)
-            {
-                if (this.historyList != null) break;
-                Thread.Sleep(50);
-            }
-            historyView.showHistoryView();
+        /**
+         * Show admin panel
+         * 
+         */
+        public void showAdmin()
+        {
+            this.historyList = null;
+            commandObject.Command = "getAdminUrl";
+            commandObject.User = this.user;
+            commandObject.Value = null;
+            sendCommand(commandObject);
+        }
+
+        /**
+         * Navigates to the admin panel
+         * 
+         */
+        public void navigateToAdmin(String adminUrl)
+        {
+            byte[] post = new ASCIIEncoding().GetBytes("username=" + this.user);
+            string headers = "Content-Type: application/x-www-form-urlencoded";
+            this.Explorer.Navigate(adminUrl, null, null, post, headers);
         }
 
         /**
@@ -451,10 +491,9 @@ namespace CTIclient
          * Create Call Control View
          * 
          */
-        private void initCallControlView()
+        public void initCallControlView()
         {
-           
-            // Add everything to CallControl toolbar
+            // Add everything to CallControl toolbar           
             this.Controls.AddRange(new Control[] { callControlView.InitializeComponent() });
             this.MinSize = new Size(220, 32);
             this.BackColor = Color.Transparent;
@@ -462,9 +501,6 @@ namespace CTIclient
             // Perform final layout
             this.ResumeLayout(false);
             this.PerformLayout();
-
-            // Add view to the view list
-            viewList.Add("callControlView", callControlView);
         }
 
         /**
@@ -474,7 +510,7 @@ namespace CTIclient
         private void getSettings()
         {
             // Get current user
-            this.adUser = new ADUser();
+            this.adUser = new ADUser(this);
             String sid = this.adUser.getUserSid();
             this.user = adUser.getUserName() + "-" + Util.getHash(sid).Substring(0,8);
                         
@@ -543,6 +579,7 @@ namespace CTIclient
             try
             {
                 this.ccsUrl = "ws://" + this.settingsList["ccsHost"] + ":" + this.settingsList["ccsPort"] + "/";
+                this.domain = this.settingsList["domain"];
                 this.sIV = this.settingsList["sIV"];
                 this.sKy = this.settingsList["sKy"];
                 this.CallSetup = this.settingsList["CallSetup"];
@@ -588,6 +625,28 @@ namespace CTIclient
             return this.user;
         }
 
+        /**
+         * Get user domain
+         * 
+         * @return domain
+         * 
+         */
+        public String getDomain()
+        {
+            return this.domain;
+        }
+
+        /**
+         * Get user role
+         * 
+         * @return role
+         * 
+         */
+        public String getRole()
+        {
+            return this.role;
+        }
+        
         /**
          * Get the extenston list in nested array format
          * 

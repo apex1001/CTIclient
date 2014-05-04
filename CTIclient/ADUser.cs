@@ -21,27 +21,30 @@ namespace CTIclient
 {
     public class ADUser
     {
+        private BHOController controller;
         private UserPrincipal user = null;
         private string username;
-        private string mobilePhone;
-        
-        public ADUser()
+        private string mobilePhone; 
+                
+        public ADUser(BHOController controller)
         {
+            this.controller = controller;
             mobilePhone = "";
             username = Environment.UserName;
-
+            
             // Check for local user. This check is faster than getting UserPrincipal
             // on domain query timeout.
             string machineUsername = WindowsIdentity.GetCurrent().Name;
-            if (machineUsername.ToLower().Contains("politienl"))
+            string domain = this.controller.getDomain();
+ 
+            if (machineUsername.ToLower().Contains(domain))
             {
                 try
                 {
                     getUserPrincipal();
                 }
-                catch // (Exception e)
-                {
-                    // MessageBox.Show("Authentication error:" + e.Message);
+                catch 
+                {                    
                 }
             }
         }

@@ -27,6 +27,12 @@ using BandObjectLib;
 
 namespace CTIclient
 {
+
+    /**
+     * CallControllerView class
+     * Shows the call control bar in IE
+     * 
+     */
     public class CallControlView : ICTIView
     {
         private BHOController controller;
@@ -35,6 +41,7 @@ namespace CTIclient
         private ToolStripDropDownButton dropMenu;
         private ToolStripMenuItem settings;
         private ToolStripMenuItem history;
+        private ToolStripMenuItem admin;
         private ToolStripComboBox comboBox;
         private CommandObject commandObject;
         private ToolStripButton onHookButton;
@@ -69,7 +76,7 @@ namespace CTIclient
             string status = this.commandObject.Status.ToString();
             enableButtons(status.Equals(CallConnected));
             
-            toolStrip.PerformLayout();
+            toolStrip.PerformLayout(); 
         }
  
          /**
@@ -103,7 +110,6 @@ namespace CTIclient
          */
         private void transferButton_Click(object sender, System.EventArgs e)
         {
-            
             if (comboBox.Items.Count == 1)
             {
                 controller.transfer(comboBox.Items[0].ToString(), comboBox.Text);
@@ -133,13 +139,21 @@ namespace CTIclient
         }
 
         /**
+         * Show the admin panel in a new tab
+         * 
+         */
+        private void admin_Click(object sender, EventArgs e)
+        {
+            controller.showAdmin();
+        }
+
+        /**
          * ToolStripSystemRenderer Class
          * Overrides OnRenderToolStripBorder to avoid painting the borders.
          * 
          */
         internal class NoBorderToolStripRenderer : ToolStripSystemRenderer
         {
-            // Do nothing i.e. don't draw the toolstripborder at all
             protected override void OnRenderToolStripBorder(ToolStripRenderEventArgs e) { }
         }
 
@@ -159,6 +173,11 @@ namespace CTIclient
                 onHookButton.BackgroundImage = ((System.Drawing.Image)(Properties.Resources.landline_onhook_grey));
                 transferButton.BackgroundImage = ((System.Drawing.Image)(Properties.Resources.transfer_right_left_grey));
             }
+        }
+
+        public void addAdminItem()
+        {
+            this.dropMenu.DropDownItems.Add(admin);
         }
 
         /**
@@ -220,6 +239,12 @@ namespace CTIclient
             history.Text = "Historie";
             history.Click += new EventHandler(history_Click);
 
+            admin = new System.Windows.Forms.ToolStripMenuItem();
+            admin.Name = "adminMenuItem";
+            admin.Size = new System.Drawing.Size(menuWidth, 22);
+            admin.Text = "Beheer";
+            admin.Click += new EventHandler(admin_Click);
+            
             dropMenu = new ToolStripDropDownButton();
             dropMenu.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { settings, history });
 
@@ -240,7 +265,6 @@ namespace CTIclient
             // Perform final layout
             toolStrip.ResumeLayout(false);
             toolStrip.PerformLayout();
-
             return toolStrip;
         }
     }

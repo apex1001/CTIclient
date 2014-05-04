@@ -1,4 +1,11 @@
-﻿using System;
+﻿/*
+ * Settings View for CTIclient.
+ * 
+ * @Author: V. Vogelesang  
+ * 
+ */
+
+using System;
 using System.Windows.Forms;
 using System.ComponentModel;
 using System.Drawing;
@@ -6,6 +13,12 @@ using System.Threading;
 
 namespace CTIclient
 {
+
+    /**
+     * SettingsView class
+     * view and change the phone settings
+     * 
+     */ 
     class SettingsView : Form, ICTIView
     {
         private BHOController controller;
@@ -39,8 +52,6 @@ namespace CTIclient
          */
         public void showSettingsMenu()
         {
-            this.extensionList = controller.getExtensionList();          
-            InitializeComponent();
             this.Show();                   
         }
 

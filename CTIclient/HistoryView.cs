@@ -1,4 +1,11 @@
-﻿using System;
+﻿/*
+ * History View for CTIclient.
+ * 
+ * @Author: V. Vogelesang  
+ * 
+ */
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,6 +13,12 @@ using System.Windows.Forms;
 
 namespace CTIclient
 {
+
+    /**
+     * HistoryView class
+     * Shows the history of made calls
+     * 
+     */    
     class HistoryView : Form, ICTIView
     {
         private String[][] historyList;
@@ -22,9 +35,16 @@ namespace CTIclient
          */
         public void showHistoryView()
         {
-            this.historyList = controller.getHistoryList();            
-            InitializeComponent();
-            this.Show();
+            this.historyList = controller.getHistoryList(); 
+            if (this.historyList != null && this.historyList.Length > 0)
+            {
+                InitializeComponent();
+                this.ShowDialog();
+            }
+            else
+            {
+                Util.showMessageBox("Er zijn geen historische gegevens gevonden.");
+            }
         }
 
         /**
@@ -83,8 +103,7 @@ namespace CTIclient
             DataGridViewCellStyle dpDataGridViewCellStyle = new DataGridViewCellStyle();
             DataGridViewRow row = null;
             
-            // Stop layout
-            ((System.ComponentModel.ISupportInitialize)(dataGridView)).BeginInit();
+            // Stop layout            
             this.SuspendLayout();
 
             // Define general dataGridViewStyle           
@@ -135,32 +154,23 @@ namespace CTIclient
             // Add items to gridView
             dataGridView.Columns.AddRange(new DataGridViewColumn[] { dialledParty, start, duration });
 
+            // Iterate the history list
             foreach (String[] historyItem in historyList)
             {
                 row = (DataGridViewRow)dataGridView.Rows[0].Clone();
                 row.Resizable = DataGridViewTriState.False;
 
-                DateTime dateFrom = DateTime.Parse(historyItem[1]);
-                DateTime dateTo = new DateTime();
-
-                row.Cells[0].Value = historyItem[0];
-                row.Cells[1].Value = dateFrom.AddHours(-2).ToLocalTime();
-
-                if (historyItem[2] != null && !historyItem[2].Equals(""))
-                {
-                    try
-                    {                        
-                        dateTo = DateTime.Parse(historyItem[2]);
-                        TimeSpan difference = dateTo - dateFrom;                        
-                        row.Cells[2].Value = difference.ToString(@"mm\:ss");
-                    }
-                    catch
-                    {
-                    }
+                row.Cells[0].Value = historyItem[0];                
+                try
+                {                        
+                    DateTime dateFrom = DateTime.Parse(historyItem[1]);
+                    DateTime dateTo = DateTime.Parse(historyItem[2]);
+                    TimeSpan difference = dateTo - dateFrom;    
+                    row.Cells[1].Value = dateFrom.AddHours(-2).ToLocalTime();
+                    row.Cells[2].Value = difference.ToString(@"mm\:ss");
                 }
-                else
-                {                    
-                    row.Cells[2].Value = "00:00";
+                catch
+                {
                 }
                 dataGridView.Rows.Add(row);
             }
@@ -175,11 +185,8 @@ namespace CTIclient
             this.Text = "History";
             this.MinimumSize = new System.Drawing.Size(windowWidth + 17, windowHeight + 22);
             this.MaximumSize = new System.Drawing.Size(windowWidth + 17, windowHeight + 38);
-            this.StartPosition = FormStartPosition.CenterScreen;
-
-            ((System.ComponentModel.ISupportInitialize)(dataGridView)).EndInit();
-            this.ResumeLayout(false);
+            this.StartPosition = FormStartPosition.CenterScreen;           
+            this.ResumeLayout(false);            
         }
-
     }
 }
