@@ -18,32 +18,33 @@ namespace CTIclient
      * A simple POCO for storing commands
      * 
      */
+    [Serializable()]
     public class CommandObject
     {
-        private string command;
-        private string status;
-        private string from;
-        private string to;
-        private string target;
-        private string pin;
-        private string user;
-        private string role;
-        private string[][] value;
+        private String command;
+        private String status;
+        private String from;
+        private String to;
+        private String target;
+        private String pin;
+        private String user;
+        private String role;
+        private String[][] value;
 
         public CommandObject()
         {
         }
 
         public CommandObject(
-            string command = "",
-            string status = "",
-            string from = "",
-            string to = "",
-            string target = "",
-            string pin = "",
-            string user = "",
-            string role = "",
-            string[][] value = null)
+            String command = "",
+            String status = "",
+            String from = "",
+            String to = "",
+            String target = "",
+            String pin = "",
+            String user = "",
+            String role = "",
+            String[][] value = null)
         {
             this.command = command;
             this.status = status;
@@ -56,7 +57,7 @@ namespace CTIclient
             this.value = value;
         }
 
-        public string Command
+        public String Command
         {
             get
             {
@@ -68,7 +69,7 @@ namespace CTIclient
             }
         }
 
-        public string Status
+        public String Status
         {
             get
             {
@@ -80,7 +81,7 @@ namespace CTIclient
             }
         }
 
-        public string From
+        public String From
         {
             get
             {
@@ -92,7 +93,7 @@ namespace CTIclient
             }
         }
 
-        public string To
+        public String To
         {
             get
             {
@@ -104,7 +105,7 @@ namespace CTIclient
             }
         }
 
-        public string Target
+        public String Target
         {
             get
             {
@@ -116,7 +117,7 @@ namespace CTIclient
             }
         }
 
-        public string Pin
+        public String Pin
         {
             get
             {
@@ -128,7 +129,7 @@ namespace CTIclient
             }
         }
 
-        public string User
+        public String User
         {
             get
             {
@@ -140,7 +141,7 @@ namespace CTIclient
             }
         }
 
-        public string Role
+        public String Role
         {
             get
             {
@@ -152,7 +153,7 @@ namespace CTIclient
             }
         }
 
-        public string[][] Value
+        public String[][] Value
         {
             get
             {

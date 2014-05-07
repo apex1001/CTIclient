@@ -261,5 +261,17 @@ namespace CTIclient
 
             return dialogResult;
         }
+
+        /**
+         * Get a unique pipe name from the username+hash
+         *
+         * @return pipeName
+         * 
+         */
+        public static String getPipeName(String userName)
+        {          
+            userName = (userName.Split('-').Last());
+            return "pipe-" + getHash(userName).Substring(0, 8);
+        }
     }
 }

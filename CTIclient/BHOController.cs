@@ -35,7 +35,7 @@ namespace CTIclient
      * Controls the CTI client
      * 
      */
-    [Guid("E0DE0DE0-46D4-4a98-AF68-0333EA26E113")]
+    [Guid("E0DE0DE0-36D4-4B08-AF68-0333EAC71C71")]
     [BandObject("CTIClient", BandObjectStyle.Horizontal | BandObjectStyle.ExplorerToolbar, HelpText = "CTIclient")]
     public class BHOController : BandObject
     {
@@ -89,6 +89,7 @@ namespace CTIclient
         {
             // Read the settings file
             readSettingsFile();
+            getAdUser();
             
             // Init DOMChanger & ADuser
             domChanger = new DOMChanger(this);
@@ -107,6 +108,10 @@ namespace CTIclient
 
             // Attach explorer & document event
             this.ExplorerAttached += new EventHandler(CallControlView_ExplorerAttached);
+
+            // Start NamedPipeServer for same call status in all tabs
+            //NamedPipeServer server = new NamedPipeServer(this);
+            //server.StartServer();            
         }
 
         /**
@@ -156,8 +161,12 @@ namespace CTIclient
                 if (command.Equals("call") && callStatus.Equals(CallTerminated))
                 {
                     String[] value = (String[]) commandObject.Value.GetValue(0);
-                    String extension = value.GetValue(0).ToString();
-                    hangup(extension, false);
+                    if (value != null)
+                    {
+                        String extension = value.GetValue(0).ToString();
+                        hangup(extension, false);                    
+                    }
+                    else hangup(this.to, false);
                 }
 
                 if (command.Equals("call") && callStatus.Equals(CallBusy))
@@ -177,7 +186,12 @@ namespace CTIclient
                 {
                     this.status = CallConnected;
                     this.to = commandObject.To;
-                    doViewUpdate("callControlView");
+                    doViewUpdate("callControlView");                   
+                }
+
+                if (command.Equals("call") && callStatus.Equals(CallSetup))
+                {
+                    this.status = CallSetup;                    
                 }
             }
         }
@@ -250,48 +264,47 @@ namespace CTIclient
          */
         public void hangup(String to, Boolean terminateLine = true)
         {
-            if (this.status.Equals(CallConnected) && !to.Equals("") && (to.Equals(this.to) || to.Equals(this.target)))
+            if ((this.status.Equals(CallConnected) || this.status.Equals(CallSetup)) && !to.Equals("") && (to.Equals(this.to) || to.Equals(this.target)))
             {
                 // Terminate the connection if offhook was pressed (default)
-                    if (terminateLine)
-                    {
-                        // Terminate the given line
-                        commandObject.Command = "terminate";
-                        commandObject.Status = CallTerminated;
-                        commandObject.From = this.from;
-                        commandObject.To = to;
-                        commandObject.Target = "";
-                        sendCommand(commandObject);
-                        Thread.Sleep(500);
-                    }
+                if (terminateLine)
+                {
+                    // Terminate the given line
+                    commandObject.Command = "terminate";
+                    commandObject.Status = CallTerminated;
+                    commandObject.From = this.from;
+                    commandObject.To = to;
+                    commandObject.Target = "";
+                    sendCommand(commandObject);
+                    Thread.Sleep(500);
+                }
 
-                    // Make 'target' the new 'to' if it is the only call left
-                    if (to.Equals(this.to) && !this.target.Equals(""))
-                    {
-                        this.to = this.target;
-                        this.target = "";
-                        commandObject.To = this.to;
-                        commandObject.Target = "";
-                        commandObject.Status = CallConnected;
-                        doViewUpdate("callControlView");
-                    }
+                // Make 'target' the new 'to' if it is the only call left
+                if (to.Equals(this.to) && !this.target.Equals(""))
+                {
+                    this.to = this.target;
+                    this.target = "";
+                    commandObject.To = this.to;
+                    commandObject.Target = "";
+                    commandObject.Status = CallConnected;
+                    doViewUpdate("callControlView");
+                }
 
-                    // Clear 'target', leaving only 'to'.
-                    else if (to.Equals(this.target))
-                    {
-                        this.target = "";
-                        commandObject.Target = "";
-                        commandObject.To = this.to;
-                        commandObject.Status = CallConnected;
-                        doViewUpdate("callControlView");
-                    }
+                // Clear 'target', leaving only 'to'.
+                else if (to.Equals(this.target))
+                {
+                    this.target = "";
+                    commandObject.Target = "";
+                    commandObject.To = this.to;
+                    commandObject.Status = CallConnected;
+                    doViewUpdate("callControlView");
+                }
 
-                    else
-                    {
-                        // If there was only one call clear everything
-                        clearCallStatus();
-                    }
-                
+                // If there was only one call clear everything
+                else
+                {                        
+                    clearCallStatus();
+                }                
             }
         }
 
@@ -435,7 +448,7 @@ namespace CTIclient
             Explorer.DocumentComplete += 
                 new SHDocVw.DWebBrowserEvents2_DocumentCompleteEventHandler(Explorer_DocumentComplete);
 
-            // Create websocket client
+             // Create websocket client
             try
             {
                 this.wsClient = new WebSocketClient(this, this.ccsUrl);
@@ -504,16 +517,25 @@ namespace CTIclient
         }
 
         /**
+         * Get the current AD user and add SID hash
+         * 
+         * @return username+hash
+         * 
+         */
+        private void getAdUser()
+        {
+            // Get current AD user
+            this.adUser = new ADUser(this);
+            String sid = this.adUser.getUserSid();
+            this.user = adUser.getUserName() + "-" + Util.getHash(sid).Substring(0, 8);
+        }
+
+        /**
          * Get settings from server
          * 
          */
         private void getSettings()
-        {
-            // Get current user
-            this.adUser = new ADUser(this);
-            String sid = this.adUser.getUserSid();
-            this.user = adUser.getUserName() + "-" + Util.getHash(sid).Substring(0,8);
-                        
+        {                       
             // Create command object
             this.commandObject = new CommandObject(command: "getSettings", user: user, pin: pin, from: from);
             sendCommand(commandObject);

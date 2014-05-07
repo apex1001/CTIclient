@@ -26,7 +26,7 @@ namespace CTIclient
         private string username;
         private string mobilePhone; 
                 
-        public ADUser(BHOController controller)
+        public ADUser(BHOController controller = null)
         {
             this.controller = controller;
             mobilePhone = "";

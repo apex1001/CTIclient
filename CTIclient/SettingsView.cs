@@ -62,7 +62,14 @@ namespace CTIclient
          * @param eventarguments
          */
         private void saveButton_Click(object sender, EventArgs e)
-        {           
+        {
+            // Save any deleted settings
+            if (this.deletedExtensionList != null && this.deletedExtensionList.Length > 0)
+            {
+                this.controller.deleteSettings(this.deletedExtensionList);
+                this.deletedExtensionList = null;
+            }            
+            
             // Save all new and updated settings
             for (int i = 0; i < extensionList.Length; i++)
             {
@@ -71,13 +78,6 @@ namespace CTIclient
             }
             this.controller.updateSettings(this.extensionList);
             Thread.Sleep(100);
-
-            // Save any deleted settings
-            if (this.deletedExtensionList != null && this.deletedExtensionList.Length > 0)
-            {
-                this.controller.deleteSettings(this.deletedExtensionList);
-                this.deletedExtensionList = null;
-            }
 
             this.Dispose();
         }

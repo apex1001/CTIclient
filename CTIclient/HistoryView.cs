@@ -35,6 +35,7 @@ namespace CTIclient
          */
         public void showHistoryView()
         {
+            this.Hide();
             this.historyList = controller.getHistoryList(); 
             if (this.historyList != null && this.historyList.Length > 0)
             {
