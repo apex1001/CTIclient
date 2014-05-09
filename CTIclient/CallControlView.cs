@@ -63,10 +63,10 @@ namespace CTIclient
         public void update()
         {
             this.commandObject = controller.getCommandObject();
-            comboBox.Items.Clear();
-            comboBox.Items.Add(commandObject.To);
+            comboBox.Items.Clear();            
+            comboBox.Items.Add(commandObject.To);       
             comboBox.Text = commandObject.To;
-
+            
             if (!commandObject.Target.Equals(""))
             {
                 comboBox.Items.Add(commandObject.Target);
@@ -247,6 +247,9 @@ namespace CTIclient
             
             dropMenu = new ToolStripDropDownButton();
             dropMenu.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { settings, history });
+            // Add admin option
+            if (controller.getRole().Equals("admin"))
+                dropMenu.DropDownItems.Add(admin);
 
             // Initialize toolstrip and add buttons
             toolStrip.GripStyle = ToolStripGripStyle.Hidden;

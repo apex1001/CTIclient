@@ -52,7 +52,7 @@ namespace CTIclient
             this.to = to;
             this.target = target;
             this.pin = pin;
-            this.user = user;
+            this.User = user;
             this.role = role;
             this.value = value;
         }

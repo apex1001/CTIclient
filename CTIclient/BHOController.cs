@@ -25,6 +25,9 @@ using System.Threading;
 using System.Windows.Forms;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
+using System.IO;
+using System.IO.Pipes;
+using System.Runtime.Serialization.Formatters.Binary;
 using BandObjectLib;
 
 namespace CTIclient
@@ -43,35 +46,23 @@ namespace CTIclient
         private DOMChanger domChanger;
         private WebSocketClient wsClient;
         private Container components = null;
-        private CommandObject commandObject; 
+        private CommandObject commandObject;
+        private CommandObject statusObject; 
         private CallControlView callControlView;
         private SettingsView settingsView;
         private HistoryView historyView;
+        private NamedPipeServer pipeServer;
+        private NamedPipeClient pipeClient;
         private Dictionary<String, ICTIView> viewList;
         private Dictionary<String, String> settingsList;    
         private String[][] extensionList;
         private String[][] historyList;
-
-        private String filePath;
-        private String ccsUrl;
-        private String domain;
-        private String user;
-        private String status = "";
-        private String from = "";
-        private String to = "";
-        private String target = "";
-        private String pin = "";
-        private String role = "";
 
         // Call status constants
         private String CallSetup;
         private String CallConnected;
         private String CallTerminated;
         private String CallBusy;
-
-        //Shared 128 bit Key and IV 
-        private String sKy; 
-        private String sIV; 
 
         // SendMessage from Win32 API. Needed for handling accelerator/control keys in text/combobox
         [DllImport("user32.dll")]
@@ -87,31 +78,66 @@ namespace CTIclient
          */
         public BHOController()
         {
-            // Read the settings file
-            readSettingsFile();
-            getAdUser();
-            
+            // Create new statusObject & read the settings file
+            this.statusObject = new CommandObject("", "", "", "", "", "", "", "", null);
+            this.commandObject = new CommandObject("", "", "", "", "", "", "", "", null);
+
+            // Start NamedPipeClient (& Server if needed) for same tabStatus in all tabs        
+            this.pipeClient = new NamedPipeClient("pipenaam");
+            if (pipeClient.getClientStream() == null)
+            {
+                startPipeServer();
+            }
+
+            // PipeServer already exists, get settings
+            else
+            {
+                getTabSettings();
+            }
+
             // Init DOMChanger & ADuser
             domChanger = new DOMChanger(this);
 
-            // Init view views         
+            // Init views 
             callControlView = new CallControlView(this);
             initCallControlView();
             settingsView = new SettingsView(this);
             historyView = new HistoryView(this);
             
             // Add views to the view list
-            viewList = new Dictionary<string, ICTIView>();  
-            viewList.Add("callControlView", callControlView);
-            viewList.Add("settingsView", settingsView);
-            viewList.Add("historyView", historyView);
+            this.viewList = new Dictionary<string, ICTIView>();
+            this.viewList.Add("callControlView", callControlView);
+            this.viewList.Add("settingsView", settingsView);
+            this.viewList.Add("historyView", historyView);
+
+            // Update the views if settingsList is available              
+            doViewUpdate("settingsView");
+            if (!this.commandObject.Status.Equals(CallTerminated) || !this.statusObject.Status.Equals(""))
+                doViewUpdate("callControlView");
 
             // Attach explorer & document event
             this.ExplorerAttached += new EventHandler(CallControlView_ExplorerAttached);
+        }
 
-            // Start NamedPipeServer for same call status in all tabs
-            //NamedPipeServer server = new NamedPipeServer(this);
-            //server.StartServer();            
+        /**
+         * Get & apply the settings for this tab
+         * preferrably from the pipeServer
+         * 
+         */
+        private void getTabSettings()
+        {
+            // Check if there is already a valid tabStatusMap at the pipeServer
+            Dictionary<String, Object> tabStatusMap = pipeClient.getTabStatusMap();
+            if (tabStatusMap != null)
+            {
+                applyMapSettings(tabStatusMap);
+            }
+            else
+            {
+                // No tabStatusMap, load settings (shouldn't happen!)
+                readSettingsFile();
+                getAdUser();
+            }
         }
 
         /**
@@ -131,14 +157,20 @@ namespace CTIclient
 
                 if (command.Equals("settingsList"))
                 {
-                    this.from = commandObject.From;
-                    this.pin = commandObject.Pin;
-                    this.role = commandObject.Role;                    
+                    this.statusObject.From = commandObject.From;
+                    this.statusObject.Pin = commandObject.Pin;
+                    this.statusObject.Role = commandObject.Role;                    
                     this.extensionList = commandObject.Value; 
                     wsClient.closeConnection();
+                    
+                    // Update pipeServer with tab status
+                    pipeClient.putTabStatusMap(this.getCurrentTabStatus());
+
+                    // Update the view
                     doViewUpdate("settingsView");
 
-                    if (this.role.Equals("admin"))
+                    // Add admin option
+                    if (this.statusObject.Role.Equals("admin"))
                         callControlView.addAdminItem();
                 }
 
@@ -166,15 +198,15 @@ namespace CTIclient
                         String extension = value.GetValue(0).ToString();
                         hangup(extension, false);                    
                     }
-                    else hangup(this.to, false);
+                    else hangup(this.statusObject.To, false);
                 }
 
                 if (command.Equals("call") && callStatus.Equals(CallBusy))
                 {
                     Util.showMessageBox("Toestel is in gesprek.", "Melding");
-                    if (!this.target.Equals("") && this.status.Equals(CallConnected))
+                    if (!this.statusObject.Target.Equals("") && this.statusObject.Status.Equals(CallConnected))
                     {                        
-                        hangup(this.target, false);        
+                        hangup(this.statusObject.Target, false);        
                     }
                     else
                     {                        
@@ -184,15 +216,18 @@ namespace CTIclient
 
                 if (command.Equals("call") && callStatus.Equals(CallConnected))
                 {
-                    this.status = CallConnected;
-                    this.to = commandObject.To;
+                    this.statusObject.Status = CallConnected;
+                    this.statusObject.To = commandObject.To;
                     doViewUpdate("callControlView");                   
                 }
 
                 if (command.Equals("call") && callStatus.Equals(CallSetup))
                 {
-                    this.status = CallSetup;                    
+                    this.statusObject.Status = CallSetup;                    
                 }
+
+                // Update pipeServer with tab status
+                pipeClient.putTabStatusMap(this.getCurrentTabStatus());
             }
         }
 
@@ -206,24 +241,24 @@ namespace CTIclient
         {
             to = Util.CleanPhoneNumber(to);
 
-            if (!to.Equals("") && !this.from.Equals("") && this.target.Equals(""))
+            if (!to.Equals("") && !this.statusObject.From.Equals("") && this.statusObject.Target.Equals(""))
             {
                 // Check if there is a connected call, offer to transfer
-                if (this.status.Equals(CallConnected))
+                if (this.statusObject.Status.Equals(CallConnected))
                 {
                     DialogResult dialogResult = Util.showMessageBox(
                          "Er is al een gesprek. Wilt u doorverbinden naar het gekozen nummer?",
                          "Melding", MessageBoxButtons.YesNoCancel);
                     if (dialogResult == DialogResult.Yes)
                     {
-                        transfer(this.to, to);
+                        transfer(this.statusObject.To, to);
                         return;
                     }
 
                     // User wants second call, set second call as target
                     if (dialogResult == DialogResult.No)
                     {
-                        this.target = to;                        
+                        this.statusObject.Target = to;                        
                     }
 
                     // User wants to cancel
@@ -236,23 +271,23 @@ namespace CTIclient
                 // If there is no current call
                 else
                 {
-                    this.status = CallSetup;
-                    this.to = to;
+                    this.statusObject.Status = CallSetup;
+                    this.statusObject.To = to;
                 }
 
                 // Create commandobject
-                commandObject.From = this.from;
-                commandObject.To = this.to;
-                commandObject.Target = this.target;
-                commandObject.Pin = this.pin;
+                commandObject.From = this.statusObject.From;
+                commandObject.To = this.statusObject.To;
+                commandObject.Target = this.statusObject.Target;
+                commandObject.Pin = this.statusObject.Pin;
                 commandObject.Command = "call";
-                commandObject.Status = this.status;
+                commandObject.Status = this.statusObject.Status;
                 commandObject.Value = new String[0][];
                 sendCommand(commandObject);
                 doViewUpdate("callControlView");
             }
 
-            else if (this.from.Equals(""))
+            else if (this.statusObject.From.Equals(""))
                 Util.showMessageBox("Er is geen primair toestel ingesteld!");
         }
 
@@ -264,7 +299,8 @@ namespace CTIclient
          */
         public void hangup(String to, Boolean terminateLine = true)
         {
-            if ((this.status.Equals(CallConnected) || this.status.Equals(CallSetup)) && !to.Equals("") && (to.Equals(this.to) || to.Equals(this.target)))
+            if ((this.statusObject.Status.Equals(CallConnected) || this.statusObject.Status.Equals(CallSetup)) &&
+                !to.Equals("") && (to.Equals(this.statusObject.To) || to.Equals(this.statusObject.Target)))
             {
                 // Terminate the connection if offhook was pressed (default)
                 if (terminateLine)
@@ -272,7 +308,7 @@ namespace CTIclient
                     // Terminate the given line
                     commandObject.Command = "terminate";
                     commandObject.Status = CallTerminated;
-                    commandObject.From = this.from;
+                    commandObject.From = this.statusObject.From;
                     commandObject.To = to;
                     commandObject.Target = "";
                     sendCommand(commandObject);
@@ -280,22 +316,22 @@ namespace CTIclient
                 }
 
                 // Make 'target' the new 'to' if it is the only call left
-                if (to.Equals(this.to) && !this.target.Equals(""))
+                if (to.Equals(this.statusObject.To) && !this.statusObject.Target.Equals(""))
                 {
-                    this.to = this.target;
-                    this.target = "";
-                    commandObject.To = this.to;
+                    this.statusObject.To = this.statusObject.Target;
+                    this.statusObject.Target = "";
+                    commandObject.To = this.statusObject.To;
                     commandObject.Target = "";
                     commandObject.Status = CallConnected;
                     doViewUpdate("callControlView");
                 }
 
                 // Clear 'target', leaving only 'to'.
-                else if (to.Equals(this.target))
+                else if (to.Equals(this.statusObject.Target))
                 {
-                    this.target = "";
+                    this.statusObject.Target = "";
                     commandObject.Target = "";
-                    commandObject.To = this.to;
+                    commandObject.To = this.statusObject.To;
                     commandObject.Status = CallConnected;
                     doViewUpdate("callControlView");
                 }
@@ -304,7 +340,10 @@ namespace CTIclient
                 else
                 {                        
                     clearCallStatus();
-                }                
+                }
+
+                // Update pipeServer with tab status
+                pipeClient.putTabStatusMap(this.getCurrentTabStatus());
             }
         }
 
@@ -317,10 +356,11 @@ namespace CTIclient
          */
         public void transfer(String to, String target)
         {
-            if(this.status.Equals(CallConnected) && !target.Equals(this.to) && !target.Equals(this.from))
+            if(this.statusObject.Status.Equals(CallConnected) && 
+                !target.Equals(this.statusObject.To) && !target.Equals(this.statusObject.From))
             {
                 commandObject.Command = "transfer";            
-                commandObject.From = this.from;
+                commandObject.From = this.statusObject.From;
                 commandObject.To = to;
                 commandObject.Target = target;
                 sendCommand(commandObject);
@@ -338,9 +378,9 @@ namespace CTIclient
         private void clearCallStatus()
         {
             // Clear call status
-            this.status = CallTerminated;
-            this.to = "";
-            this.target = ""; 
+            this.statusObject.Status = CallTerminated;
+            this.statusObject.To = "";
+            this.statusObject.Target = ""; 
             
             // Clear commandObject
             commandObject.Command = "terminate";
@@ -371,7 +411,7 @@ namespace CTIclient
         {
             this.historyList = null;
             commandObject.Command = "getHistory";
-            commandObject.User = this.user;
+            commandObject.User = this.statusObject.User;
             commandObject.Value = null;
             sendCommand(commandObject);
         }
@@ -382,20 +422,22 @@ namespace CTIclient
          */
         public void showAdmin()
         {
-            this.historyList = null;
             commandObject.Command = "getAdminUrl";
-            commandObject.User = this.user;
+            commandObject.User = this.statusObject.User;
             commandObject.Value = null;
             sendCommand(commandObject);
         }
 
         /**
          * Navigates to the admin panel
+         * username is sent by POST
+         * 
+         * @param url of admin page
          * 
          */
         public void navigateToAdmin(String adminUrl)
         {
-            byte[] post = new ASCIIEncoding().GetBytes("username=" + this.user);
+            byte[] post = new ASCIIEncoding().GetBytes("username=" + this.statusObject.User);
             string headers = "Content-Type: application/x-www-form-urlencoded";
             this.Explorer.Navigate(adminUrl, null, null, post, headers);
         }
@@ -412,6 +454,9 @@ namespace CTIclient
             wsClient.sendMessage(json);            
             // Activate  AES later
             //wsClient.sendMessage(AESModule.EncryptRJ128(sKy, sIV, json));
+
+            // Update pipeServer with tab status
+            pipeClient.putTabStatusMap(this.getCurrentTabStatus());
         }
 
         /**
@@ -420,7 +465,7 @@ namespace CTIclient
          * @param view name, all if none given
          * 
          */
-        private void doViewUpdate(String viewName)
+        private void doViewUpdate(String viewName = null)
         {
             if (viewName.Equals("") || viewName == null) 
             {
@@ -445,13 +490,15 @@ namespace CTIclient
          */
         private void CallControlView_ExplorerAttached(object sender, EventArgs e)
         {
+            // Set window events for DOMChnage & tabfocus
             Explorer.DocumentComplete += 
                 new SHDocVw.DWebBrowserEvents2_DocumentCompleteEventHandler(Explorer_DocumentComplete);
+            Explorer.WindowStateChanged += new SHDocVw.DWebBrowserEvents2_WindowStateChangedEventHandler(Explorer_WindowStateChanged);
 
-             // Create websocket client
+            // Create websocket client
             try
             {
-                this.wsClient = new WebSocketClient(this, this.ccsUrl);
+                this.wsClient = new WebSocketClient(this, this.settingsList["ccsUrl"]);
             }
             catch 
             { 
@@ -459,7 +506,10 @@ namespace CTIclient
             }           
             
             // Init settings
-            getSettings();
+            if (extensionList == null)
+            {
+                getSettingsList();
+            }
         }
 
         /**
@@ -473,6 +523,33 @@ namespace CTIclient
         private void Explorer_DocumentComplete(object pDisp, ref object URL)
         {
             domChanger.changeDOM(this.Explorer);
+        }
+
+        /**
+         * Handle WindowStateChange event
+         * Update the tab on statechange
+         * 
+         * @param WindowStatFlags
+         * @param ValidWindowStatflags
+         * 
+         */
+        private void Explorer_WindowStateChanged(uint dwWindowStateFlags, uint dwValidFlagsMask)
+        {
+            // Tab is activated
+            if (dwWindowStateFlags == 3)
+            {
+                // Get tabStatus from pipeServer
+                getTabSettings();
+
+                // Update the views       
+                doViewUpdate("settingsView");                
+
+                // Close wsClient connection if active
+                if (this.statusObject.Status.Equals(CallTerminated))
+                    clearCallStatus();
+                else
+                    doViewUpdate("callControlView");
+            }            
         }
 
         /**
@@ -527,17 +604,20 @@ namespace CTIclient
             // Get current AD user
             this.adUser = new ADUser(this);
             String sid = this.adUser.getUserSid();
-            this.user = adUser.getUserName() + "-" + Util.getHash(sid).Substring(0, 8);
+            this.statusObject.User = adUser.getUserName() + "-" + Util.getHash(sid).Substring(0, 8);
         }
 
         /**
          * Get settings from server
          * 
          */
-        private void getSettings()
-        {                       
+        private void getSettingsList()
+        {
             // Create command object
-            this.commandObject = new CommandObject(command: "getSettings", user: user, pin: pin, from: from);
+            this.commandObject = new CommandObject(command: "getSettings", 
+                                                    user: this.statusObject.User,
+                                                    pin: this.statusObject.Pin,
+                                                    from: this.statusObject.From);
             sendCommand(commandObject);
         }
 
@@ -552,8 +632,8 @@ namespace CTIclient
             // Check if list is empty
             if (this.extensionList == null || this.extensionList.Length < 1)
             {
-                this.from = "";
-                this.pin = "";
+                this.statusObject.From = "";
+                this.statusObject.Pin = "";
             }            
             
             // Get new primary extension
@@ -561,17 +641,17 @@ namespace CTIclient
             {
                 if (item.GetValue(2).Equals("t"))
                 {
-                    this.from = item.GetValue(1).ToString();
-                    this.pin = item.GetValue(4).ToString();
+                    this.statusObject.From = item.GetValue(1).ToString();
+                    this.statusObject.Pin = item.GetValue(4).ToString();
                     break;
                 }                
             }
 
             // Create command object and save settings
-            this.commandObject = new CommandObject(command: "updateSettings", 
-                                                   from: from, 
-                                                   user: user, 
-                                                   pin: pin, 
+            this.commandObject = new CommandObject(command: "updateSettings",
+                                                   from: this.statusObject.From,
+                                                   user: this.statusObject.User,
+                                                    pin: this.statusObject.Pin,
                                                    value: extensionList);
             sendCommand(commandObject);
             wsClient.closeConnection();
@@ -582,9 +662,13 @@ namespace CTIclient
          * 
          */
         public void deleteSettings(String[][] deletedExtensionList)
-        {            
-            // Create command object
-            this.commandObject = new CommandObject(command: "deleteSettings", from: from, user: user, pin: pin, value: deletedExtensionList);
+        {
+            // Create command object and save settings
+            this.commandObject = new CommandObject(command: "deleteSettings",
+                                                   from: this.statusObject.From,
+                                                   user: this.statusObject.User,
+                                                    pin: this.statusObject.Pin,
+                                                   value: deletedExtensionList);
             sendCommand(commandObject);
             wsClient.closeConnection();
         }
@@ -596,22 +680,84 @@ namespace CTIclient
         private void readSettingsFile()
         {
             String programPath = System.Environment.GetFolderPath(System.Environment.SpecialFolder.ProgramFiles);
-            this.filePath = programPath + "\\CTIclient\\";
-            this.settingsList = Util.parseSettingsFile(this.filePath + "settings.ini");
+            String filePath = programPath + "\\CTIclient\\";
+            Dictionary<String, String> settingsList = Util.parseSettingsFile(filePath + "settings.ini");
             try
             {
-                this.ccsUrl = "ws://" + this.settingsList["ccsHost"] + ":" + this.settingsList["ccsPort"] + "/";
-                this.domain = this.settingsList["domain"];
-                this.sIV = this.settingsList["sIV"];
-                this.sKy = this.settingsList["sKy"];
-                this.CallSetup = this.settingsList["CallSetup"];
-                this.CallConnected = this.settingsList["CallConnected"];
-                this.CallTerminated = this.settingsList["CallTerminated"];
-                this.CallBusy = this.settingsList["CallBusy"];
+                this.settingsList = settingsList;
+                this.settingsList["ccsUrl"] = "ws://" + settingsList["ccsHost"] + ":" + settingsList["ccsPort"] + "/";
+                applyStatusContstants(settingsList);
             }
             catch
             {
             }
+        }
+
+        /**
+         * Apply Status constants from settingslist
+         * 
+         * @param settingsList
+         * 
+         */
+        private void applyStatusContstants(Dictionary<String, String> settingsList)
+        {
+            this.CallSetup = settingsList["CallSetup"];
+            this.CallConnected = settingsList["CallConnected"];
+            this.CallTerminated = settingsList["CallTerminated"];
+            this.CallBusy = settingsList["CallBusy"];
+        }
+
+        /**
+  * Start a NamedPipeServer for tab synchronisation
+  * 
+  */
+        private void startPipeServer()
+        {
+            this.pipeServer = new NamedPipeServer(this);
+            this.pipeServer.StartServer();
+
+            // Read & apply the settings file
+            readSettingsFile();
+            getAdUser();
+        }
+
+        /**
+         * Apply the information in a tabStatusMap to this tab
+         * 
+         * @param tabStatusMap
+         * 
+         */
+        private void applyMapSettings(Dictionary<String, Object> tabStatusMap)
+        {
+            try
+            {
+                this.commandObject = (CommandObject)tabStatusMap["commandObject"];
+                this.statusObject = (CommandObject)tabStatusMap["statusObject"];
+                this.settingsList = (Dictionary<String, String>)tabStatusMap["settingsList"];
+                this.extensionList = (String[][])tabStatusMap["extensionList"];
+                applyStatusContstants(this.settingsList);
+            }
+
+            catch (Exception e)
+            {
+                Util.showMessageBox("err" + e.Message + e.StackTrace);
+            }
+        }
+
+        /**
+         * Get the status of the current tab
+         * 
+         * @return tabStatusMap
+         * 
+         */
+        public Dictionary<String, Object> getCurrentTabStatus()
+        {
+            Dictionary<String, object> tabStatusMap = new Dictionary<String, object>();
+            tabStatusMap["commandObject"] = this.commandObject;
+            tabStatusMap["statusObject"] = this.statusObject;
+            tabStatusMap["settingsList"] = this.settingsList;
+            tabStatusMap["extensionList"] = this.extensionList;
+            return tabStatusMap;
         }
 
         /**
@@ -644,7 +790,7 @@ namespace CTIclient
          */
         public String getUsername()
         {
-            return this.user;
+            return this.statusObject.User;
         }
 
         /**
@@ -655,7 +801,7 @@ namespace CTIclient
          */
         public String getDomain()
         {
-            return this.domain;
+            return this.settingsList["domain"];
         }
 
         /**
@@ -666,7 +812,7 @@ namespace CTIclient
          */
         public String getRole()
         {
-            return this.role;
+            return this.statusObject.Role;
         }
         
         /**
@@ -691,7 +837,7 @@ namespace CTIclient
                 if (components != null)
                     components.Dispose();
             }
-            wsClient.closeConnection();
+            wsClient.closeConnection();    
             base.Dispose(disposing);            
         }
     }
