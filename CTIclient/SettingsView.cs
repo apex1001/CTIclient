@@ -52,7 +52,7 @@ namespace CTIclient
          */
         public void showSettingsMenu()
         {
-            this.Show();                   
+            this.ShowDialog();                   
         }
 
         /**
@@ -153,8 +153,16 @@ namespace CTIclient
          */
         protected override void Dispose(bool disposing)
         {
-            this.Hide();
-            this.InitializeComponent();
+            this.Hide();          
+        }
+
+        /**
+         * Dispose of window
+         * 
+         */
+        public void componentDispose()
+        {
+            base.Dispose();
         }
 
         /**

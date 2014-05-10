@@ -99,8 +99,8 @@ namespace CTIclient
             try
             {
                 // Create client & connect to pipe
-                var client = new NamedPipeClientStream("wsPipesOfPiece");
-                //var client = new NamedPipeClientStream(this.pipeName);
+                //var client = new NamedPipeClientStream("wsPipesOfPiece");
+                var client = new NamedPipeClientStream(this.pipeName);
                 client.Connect(1);
                 return client;
             }

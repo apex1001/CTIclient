@@ -58,6 +58,15 @@ namespace CTIclient
         }
 
         /**
+         * Dispose of window
+         * 
+         */
+        public void componentDispose()
+        {
+            base.Dispose();
+        }
+
+        /**
          * Handle click on cell text
          * 
          * @param object sender

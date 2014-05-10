@@ -268,10 +268,10 @@ namespace CTIclient
          * @return pipeName
          * 
          */
-        public static String getPipeName(String userName)
+        public static String getPipeName(String userName, String prefix = "")
         {          
             userName = (userName.Split('-').Last());
-            return "pipe-" + getHash(userName).Substring(0, 8);
+            return prefix + "Pipe" + getHash(userName).Substring(0, 8);
         }
     }
 }

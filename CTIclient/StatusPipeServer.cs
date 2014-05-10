@@ -17,7 +17,7 @@ namespace CTIclient
         private String pipeName;
         private CommandObject commandObject;
 
-        public StatusPipeServer(BHOController controller, String pipeName = "")
+        public StatusPipeServer(BHOController controller, String pipeName)
         {
             this.controller = controller;
             this.pipeName = pipeName;
@@ -37,7 +37,7 @@ namespace CTIclient
                     {
                         try
                         {
-                            var server = new NamedPipeServerStream("PipesOfPiece", PipeDirection.InOut, 254);
+                            var server = new NamedPipeServerStream(this.pipeName, PipeDirection.InOut, 254);
                             server.WaitForConnection();
                             clientCount++;
                             //Util.showMessageBox("client count:" + clientCount);

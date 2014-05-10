@@ -29,10 +29,10 @@ namespace CTIclient
         private bool connectionOpen = false;
         private System.Timers.Timer timer;
 
-        public WebSocketClient(string url)
+        public WebSocketClient(String url, String pipeName)
         {            
             this.url = url;            
-            this.pipeServer = new WsPipeServer(this);
+            this.pipeServer = new WsPipeServer(this, pipeName);
             this.pipeServer.startServer();
         }
 

@@ -25,10 +25,11 @@ namespace CTIclient
     {
         private WebSocketClient wsClient;
         private ArrayList serverList;
-        
-        public WsPipeServer(WebSocketClient wsClient)
+        private String pipeName;
+        public WsPipeServer(WebSocketClient wsClient, String pipeName)
         {
             this.wsClient = wsClient;
+            this.pipeName = pipeName;
         }
 
         public void startServer()
@@ -42,9 +43,9 @@ namespace CTIclient
                     try
                     {
                         // Get connections for input and output
-                        var serverIn = new NamedPipeServerStream("wsPipesOfPiece", PipeDirection.InOut, 254);
+                        var serverIn = new NamedPipeServerStream(this.pipeName, PipeDirection.InOut, 254);
                         serverIn.WaitForConnection();
-                        var serverOut = new NamedPipeServerStream("wsPipesOfPiece", PipeDirection.InOut, 254);
+                        var serverOut = new NamedPipeServerStream(this.pipeName, PipeDirection.InOut, 254);
                         serverOut.WaitForConnection();
                         serverList.Add(serverOut);
 
