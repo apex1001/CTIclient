@@ -51,12 +51,14 @@ namespace CTIclient
         private CallControlView callControlView;
         private SettingsView settingsView;
         private HistoryView historyView;
-        private NamedPipeServer pipeServer;
-        private NamedPipeClient pipeClient;
+        private StatusPipeServer statusPipeServer;
+        private StatusPipeClient statusPipeClient;
+        private WsPipeClient wsPipeClient;
         private Dictionary<String, ICTIView> viewList;
         private Dictionary<String, String> settingsList;    
         private String[][] extensionList;
         private String[][] historyList;
+        private Boolean isActiveTab;
 
         // Call status constants
         private String CallSetup;
@@ -82,18 +84,23 @@ namespace CTIclient
             this.statusObject = new CommandObject("", "", "", "", "", "", "", "", null);
             this.commandObject = new CommandObject("", "", "", "", "", "", "", "", null);
 
-            // Start NamedPipeClient (& Server if needed) for same tabStatus in all tabs        
-            this.pipeClient = new NamedPipeClient("pipenaam");
-            if (pipeClient.getClientStream() == null)
+            // Start NamedPipeClient (& Server if needed) for same tabStatus in all tabs  
+            // Also start one instance of WsClient for communication with CallControlServer
+            this.statusPipeClient = new StatusPipeClient("pipenaam"); 
+            if (statusPipeClient.getClientStream() == null)
             {
-                startPipeServer();
+                startPipeServer();               
+                startWsClient();
             }
-
+                
             // PipeServer already exists, get settings
             else
             {
                 getTabSettings();
             }
+
+            this.wsPipeClient = new WsPipeClient(this, "pipenaam");
+            this.wsPipeClient.startClient();            
 
             // Init DOMChanger & ADuser
             domChanger = new DOMChanger(this);
@@ -117,17 +124,18 @@ namespace CTIclient
 
             // Attach explorer & document event
             this.ExplorerAttached += new EventHandler(CallControlView_ExplorerAttached);
+            this.isActiveTab = true;
         }
 
         /**
          * Get & apply the settings for this tab
-         * preferrably from the pipeServer
+         * preferrably from the statusPipeServer
          * 
          */
         private void getTabSettings()
         {
-            // Check if there is already a valid tabStatusMap at the pipeServer
-            Dictionary<String, Object> tabStatusMap = pipeClient.getTabStatusMap();
+            // Check if there is already a valid tabStatusMap at the statusPipeServer
+            Dictionary<String, Object> tabStatusMap = statusPipeClient.getTabStatusMap();
             if (tabStatusMap != null)
             {
                 applyMapSettings(tabStatusMap);
@@ -160,11 +168,11 @@ namespace CTIclient
                     this.statusObject.From = commandObject.From;
                     this.statusObject.Pin = commandObject.Pin;
                     this.statusObject.Role = commandObject.Role;                    
-                    this.extensionList = commandObject.Value; 
-                    wsClient.closeConnection();
+                    this.extensionList = commandObject.Value;
+                    wsPipeClient.sendMessage("closeConnection");
                     
-                    // Update pipeServer with tab status
-                    pipeClient.putTabStatusMap(this.getCurrentTabStatus());
+                    // Update statusPipeServer with tab status
+                    statusPipeClient.putTabStatusMap(this.getCurrentTabStatus());
 
                     // Update the view
                     doViewUpdate("settingsView");
@@ -177,7 +185,7 @@ namespace CTIclient
                 if (command.Equals("userHistory"))
                 {
                     this.historyList = commandObject.Value;
-                    wsClient.closeConnection();
+                    wsPipeClient.sendMessage("closeConnection");
                     Thread.Sleep(100);
                     doViewUpdate("historyView");
                 }
@@ -186,7 +194,7 @@ namespace CTIclient
                 {
                     String[][] valueArray = commandObject.Value;
                     String adminUrl = valueArray[0][0];
-                    wsClient.closeConnection();
+                    wsPipeClient.sendMessage("closeConnection");
                     navigateToAdmin(adminUrl);
                 }
 
@@ -226,8 +234,8 @@ namespace CTIclient
                     this.statusObject.Status = CallSetup;                    
                 }
 
-                // Update pipeServer with tab status
-                pipeClient.putTabStatusMap(this.getCurrentTabStatus());
+                // Update statusPipeServer with tab status
+                statusPipeClient.putTabStatusMap(this.getCurrentTabStatus());
             }
         }
 
@@ -342,8 +350,8 @@ namespace CTIclient
                     clearCallStatus();
                 }
 
-                // Update pipeServer with tab status
-                pipeClient.putTabStatusMap(this.getCurrentTabStatus());
+                // Update statusPipeServer with tab status
+                statusPipeClient.putTabStatusMap(this.getCurrentTabStatus());
             }
         }
 
@@ -389,7 +397,7 @@ namespace CTIclient
             commandObject.Target = "";
 
             // Close connection
-            wsClient.closeConnection();
+            wsPipeClient.sendMessage("closeConnection");
             doViewUpdate("callControlView");
         }
 
@@ -451,12 +459,13 @@ namespace CTIclient
         private void sendCommand(CommandObject command)
         {            
             string json = Util.toJSON(command);
-            wsClient.sendMessage(json);            
+            wsPipeClient.sendMessage(json);
+      
             // Activate  AES later
-            //wsClient.sendMessage(AESModule.EncryptRJ128(sKy, sIV, json));
+            //wsPipeClient.sendMessage(AESModule.EncryptRJ128(sKy, sIV, json));
 
-            // Update pipeServer with tab status
-            pipeClient.putTabStatusMap(this.getCurrentTabStatus());
+            // Update statusPipeServer with tab status
+            statusPipeClient.putTabStatusMap(this.getCurrentTabStatus());
         }
 
         /**
@@ -495,20 +504,10 @@ namespace CTIclient
                 new SHDocVw.DWebBrowserEvents2_DocumentCompleteEventHandler(Explorer_DocumentComplete);
             Explorer.WindowStateChanged += new SHDocVw.DWebBrowserEvents2_WindowStateChangedEventHandler(Explorer_WindowStateChanged);
 
-            // Create websocket client
-            try
-            {
-                this.wsClient = new WebSocketClient(this, this.settingsList["ccsUrl"]);
-            }
-            catch 
-            { 
-                // Do nothing. If server is down user shouldn't be bothered when opening new tab.
-            }           
-            
             // Init settings
             if (extensionList == null)
-            {
-                getSettingsList();
+            {                
+                getSettingsList();                
             }
         }
 
@@ -538,18 +537,21 @@ namespace CTIclient
             // Tab is activated
             if (dwWindowStateFlags == 3)
             {
-                // Get tabStatus from pipeServer
+                this.isActiveTab = true;
+
+                // Get tabStatus from statusPipeServer
                 getTabSettings();
 
                 // Update the views       
-                doViewUpdate("settingsView");                
+                doViewUpdate("settingsView");
 
-                // Close wsClient connection if active
+                // Clear connection if active
                 if (this.statusObject.Status.Equals(CallTerminated))
                     clearCallStatus();
                 else
                     doViewUpdate("callControlView");
-            }            
+            }
+            else this.isActiveTab = false;
         }
 
         /**
@@ -654,7 +656,7 @@ namespace CTIclient
                                                     pin: this.statusObject.Pin,
                                                    value: extensionList);
             sendCommand(commandObject);
-            wsClient.closeConnection();
+            wsPipeClient.sendMessage("closeConnection");
         }
 
         /**
@@ -670,7 +672,7 @@ namespace CTIclient
                                                     pin: this.statusObject.Pin,
                                                    value: deletedExtensionList);
             sendCommand(commandObject);
-            wsClient.closeConnection();
+            wsPipeClient.sendMessage("closeConnection");
         }
 
         /**
@@ -708,17 +710,34 @@ namespace CTIclient
         }
 
         /**
-  * Start a NamedPipeServer for tab synchronisation
-  * 
-  */
+         * Start a NamedPipeServer for tab synchronisation
+         * 
+         */
         private void startPipeServer()
         {
-            this.pipeServer = new NamedPipeServer(this);
-            this.pipeServer.StartServer();
+            this.statusPipeServer = new StatusPipeServer(this);
+            this.statusPipeServer.StartServer();
 
             // Read & apply the settings file
             readSettingsFile();
             getAdUser();
+        }
+
+        /**
+         * Start a webSocketClient
+         * 
+         */
+        private void startWsClient()
+        {         
+            // Create websocket client
+            try
+            {
+                this.wsClient = new WebSocketClient(this.settingsList["ccsUrl"]);               
+            }
+            catch
+            {
+                // Do nothing. If server is down user shouldn't be bothered when opening new tab.
+            }         
         }
 
         /**
@@ -740,7 +759,7 @@ namespace CTIclient
 
             catch (Exception e)
             {
-                Util.showMessageBox("err" + e.Message + e.StackTrace);
+                Util.showMessageBox("BHOcontroller err" + e.Message + e.StackTrace);
             }
         }
 
@@ -826,6 +845,11 @@ namespace CTIclient
             return this.extensionList;
         }
 
+        public Boolean getActiveTab()
+        {
+            return this.isActiveTab;
+        }
+
         /**
          * Dispose of toolbar
          * 
@@ -837,7 +861,8 @@ namespace CTIclient
                 if (components != null)
                     components.Dispose();
             }
-            wsClient.closeConnection();    
+
+            wsPipeClient.sendMessage("closeTab");    
             base.Dispose(disposing);            
         }
     }

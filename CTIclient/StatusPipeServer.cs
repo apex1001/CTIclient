@@ -11,13 +11,13 @@ using System.Runtime.Serialization.Formatters.Binary;
 
 namespace CTIclient
 {
-    class NamedPipeServer
+    class StatusPipeServer
     {
         private BHOController controller;
         private String pipeName;
         private CommandObject commandObject;
 
-        public NamedPipeServer(BHOController controller, String pipeName = "")
+        public StatusPipeServer(BHOController controller, String pipeName = "")
         {
             this.controller = controller;
             this.pipeName = pipeName;

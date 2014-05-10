@@ -17,21 +17,23 @@ using SuperSocket.ClientEngine;
 using System.Threading;
 using System.Windows.Forms;
 using System.Timers;
+using System.Threading.Tasks;
 
 namespace CTIclient
 {
     class WebSocketClient
     {
         private WebSocket websocket = null;
-        private BHOController controller;
+        private WsPipeServer pipeServer;
         private string url;
         private bool connectionOpen = false;
         private System.Timers.Timer timer;
 
-        public WebSocketClient(BHOController controller, string url)
-        {
-            this.controller = controller;
-            this.url = url;
+        public WebSocketClient(string url)
+        {            
+            this.url = url;            
+            this.pipeServer = new WsPipeServer(this);
+            this.pipeServer.startServer();
         }
 
         public Boolean sendMessage(string text)
@@ -88,8 +90,8 @@ namespace CTIclient
         }
 
         void websocket_MessageReceived(object sender, MessageReceivedEventArgs e)
-        {   
-            this.controller.receiveCommand(e.Message);
+        {            
+            this.pipeServer.sendMessage(e.Message);            
         }
 
         private void addEventListeners()

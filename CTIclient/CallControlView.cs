@@ -61,7 +61,7 @@ namespace CTIclient
          * 
          */
         public void update()
-        {
+        {           
             this.commandObject = controller.getCommandObject();
             comboBox.Items.Clear();            
             comboBox.Items.Add(commandObject.To);       
@@ -79,11 +79,11 @@ namespace CTIclient
             toolStrip.PerformLayout(); 
         }
  
-         /**
-          * Call controller on offHook/dial event. 
-          * Looks for active/selected number in combobox
-          * 
-          */
+        /**
+        * Call controller on offHook/dial event. 
+        * Looks for active/selected number in combobox
+        * 
+        */
         private void offHookButton_Click(object sender, System.EventArgs e)
         {
             String text = Util.CleanPhoneNumber(comboBox.Text);

@@ -10,11 +10,11 @@ using System.Threading;
 
 namespace CTIclient
 {
-    class NamedPipeClient
+    class StatusPipeClient
     {
         private String pipeName;
             
-        public NamedPipeClient(String pipeName)
+        public StatusPipeClient(String pipeName)
         {
             this.pipeName = pipeName;
         }
