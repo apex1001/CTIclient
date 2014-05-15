@@ -20,10 +20,12 @@ using System.Text;
 using System.Windows.Forms;
 using System.ComponentModel;
 using System.Timers;
+using System.Threading;
 using System.Windows.Forms.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
 using BandObjectLib;
+using mshtml;
 
 namespace CTIclient
 {
@@ -48,12 +50,17 @@ namespace CTIclient
         private ToolStripButton offHookButton;
         private ToolStripButton transferButton;
 
-        private const string CallConnected = "Confirmed Dialog";
+        private String CallConnected;
+
+        [DllImport("Shell32.dll")]
+        public extern static int ExtractIconEx(string libName, int iconIndex,
+        IntPtr[] largeIcon, IntPtr[] smallIcon, int nIcons);
         
         public CallControlView(BHOController toolbar)
         {
             this.toolbar = toolbar;
-            this.controller = toolbar;            
+            this.controller = toolbar;
+            this.CallConnected = this.controller.getSettingsList()["CallConnected"];
         }
 
         /**
@@ -73,18 +80,18 @@ namespace CTIclient
                 comboBox.Text = commandObject.Target;
             }           
 
-            string status = this.commandObject.Status.ToString();
+            String status = this.commandObject.Status.ToString();
             enableButtons(status.Equals(CallConnected));
             
             toolStrip.PerformLayout(); 
         }
  
         /**
-        * Call controller on offHook/dial event. 
-        * Looks for active/selected number in combobox
-        * 
-        */
-        private void offHookButton_Click(object sender, System.EventArgs e)
+         * Call controller on offHook/dial event. 
+         * Looks for active/selected number in combobox
+         * 
+         */
+        public void offHookButton_Click(object sender, System.EventArgs e)
         {
             String text = Util.CleanPhoneNumber(comboBox.Text);
             if (!text.Equals("") && comboBox.Text.Length > 2)
@@ -98,7 +105,7 @@ namespace CTIclient
          * Looks for active/selected number in combobox
          *       
          */
-        private void onHookButton_Click(object sender, System.EventArgs e)
+        public void onHookButton_Click(object sender, System.EventArgs e)
         {
             controller.hangup(comboBox.Text);
         }
@@ -108,7 +115,7 @@ namespace CTIclient
          * Looks for from(0)/to(1) items in combobox Items list
          *       
          */
-        private void transferButton_Click(object sender, System.EventArgs e)
+        public void transferButton_Click(object sender, System.EventArgs e)
         {
             if (comboBox.Items.Count == 1)
             {
@@ -175,9 +182,108 @@ namespace CTIclient
             }
         }
 
+        /**
+         * Add the admin option to the dropDownMenu
+         * 
+         */
         public void addAdminItem()
         {
             this.dropMenu.DropDownItems.Add(admin);
+        }
+
+        /**
+         * Enable the keydown events for the 
+         * DOM docuemnt and combobox
+         * 
+         * @param exlorer instance of tab
+         * 
+         */
+        public void enableShortCuts(SHDocVw.WebBrowserClass explorer)
+        {
+            // Hook into keydown event of toolbar
+            comboBox.KeyDown += new KeyEventHandler(toolbar_KeyDown);
+            
+            // Hook into keydown event for document
+            HTMLDocument document = (HTMLDocument) explorer.Document;
+            HTMLDocumentEvents2_Event docEvent = (document as HTMLDocumentEvents2_Event);
+            docEvent.onkeydown += new HTMLDocumentEvents2_onkeydownEventHandler(docEvent_onkeydown);
+        }
+
+        /**
+         * Handle keydown in the combobox
+         * 
+         * @param object sender
+         * @param KeyeEventArgs
+         * 
+         */
+        private void toolbar_KeyDown(object sender, KeyEventArgs e)
+        {
+            // Chec for Alt + shortcut key
+            if (e.Alt && e.KeyValue > 48)
+                handleShortcutKey(e.KeyValue); 
+           
+            // Check for enter
+            if (e.KeyValue == 13)
+                offHookButton_Click(sender, e);
+        }
+
+        /**
+        * Catch on keydown
+        * 
+        * @param eventObject
+        * 
+        */
+        private void docEvent_onkeydown(IHTMLEventObj pEvtObj)
+        {           
+            if (pEvtObj.altKey && pEvtObj.keyCode > 48)                
+                handleShortcutKey(pEvtObj.keyCode);            
+        }
+
+        /**
+        * Handle the given shortcut
+        *          
+        * @param eventObject
+        * 
+        */
+        private void handleShortcutKey(int keyCode)
+        {
+            Thread.Sleep(100);
+            switch (keyCode)
+            {
+                // Alt + 1 -> select first line
+                case 49:
+                    this.comboBox.Focus();
+                    if (this.comboBox.Items.Count > 0)
+                    {
+                        this.comboBox.Text = this.comboBox.Items[0].ToString();
+                    }
+                    break;
+
+                // Alt + 2 -> select first line
+                case 50:
+                    this.comboBox.Focus();
+                    if (this.comboBox.Items.Count > 1)
+                    {
+                        this.comboBox.Text = this.comboBox.Items[1].ToString();
+                    }
+                    break;
+
+                // Alt + i -> focus combobox for input
+                case 73:
+                    this.comboBox.Text = "";
+                    this.comboBox.Focus();                    
+                    break;
+
+                // Alt + j -> transfer
+                case 74:
+                    this.transferButton_Click(null, null);
+                    break;
+
+                // Alt + n -> hangup
+                case 78:
+                    this.onHookButton_Click(null, null);
+                    break;
+            }
         }
 
         /**
@@ -203,48 +309,50 @@ namespace CTIclient
             offHookButton.Size = buttonSize;
             offHookButton.BackgroundImageLayout = ImageLayout.Stretch;
             offHookButton.BackgroundImage = ((System.Drawing.Image)(Properties.Resources.landline_offhook));
+            offHookButton.ToolTipText = "Nummer bellen (invoeren + Enter)";
             offHookButton.Click += new System.EventHandler(offHookButton_Click);
 
             onHookButton.AutoSize = false;
             onHookButton.Size = buttonSize;
             onHookButton.BackgroundImageLayout = ImageLayout.Stretch;
             onHookButton.BackgroundImage = ((System.Drawing.Image)(Properties.Resources.landline_onhook_grey));
+            onHookButton.ToolTipText = "Gesprek beëindigen (Alt + n)";
             onHookButton.Click += new System.EventHandler(onHookButton_Click);
 
             transferButton.AutoSize = false;
             transferButton.Size = buttonSize;
             transferButton.BackgroundImageLayout = ImageLayout.Stretch;
             transferButton.BackgroundImage = ((System.Drawing.Image)(Properties.Resources.transfer_right_left_grey));
+            transferButton.ToolTipText = "Doorverbinden (Alt + j)";
             transferButton.Click += new System.EventHandler(transferButton_Click);
 
             // Initialize combobox            
             comboBox.AutoSize = false;
             comboBox.Margin = new System.Windows.Forms.Padding(0, 0, 4, 0);
             comboBox.Size = new System.Drawing.Size(115, 28);
-            comboBox.Items.AddRange(new object[] { }); // Remove this later!!
+            comboBox.Items.AddRange(new object[] { });
+            comboBox.ToolTipText = "Invoeren nummer (Alt + i)\r\nSelecteer lijn 1 (Alt + 1)\r\nSelecteer lijn 2 (Alt + 2)";
             comboBox.GotFocus += new EventHandler(toolbar.comboBox_GotFocus);
 
             // Initialize drop menu
-            var menuWidth = 80;
-
             settings = new System.Windows.Forms.ToolStripMenuItem();
             settings.Name = "settingsMenuItem";
-            settings.Size = new System.Drawing.Size(menuWidth, 22);
             settings.Text = "Instellingen";
             settings.Click += new EventHandler(settings_Click);
+            settings.Image = getIconFromIndex(72).ToBitmap();            
 
             history = new System.Windows.Forms.ToolStripMenuItem();
             history.Name = "historyMenuItem";
-            history.Size = new System.Drawing.Size(menuWidth, 22);
             history.Text = "Historie";
             history.Click += new EventHandler(history_Click);
+            history.Image = getIconFromIndex(172).ToBitmap();
 
             admin = new System.Windows.Forms.ToolStripMenuItem();
             admin.Name = "adminMenuItem";
-            admin.Size = new System.Drawing.Size(menuWidth, 22);
             admin.Text = "Beheer";
             admin.Click += new EventHandler(admin_Click);
-            
+            admin.Image = getIconFromIndex(45).ToBitmap();
+
             dropMenu = new ToolStripDropDownButton();
             dropMenu.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { settings, history });
             // Add admin option
@@ -269,6 +377,20 @@ namespace CTIclient
             toolStrip.ResumeLayout(false);
             toolStrip.PerformLayout();
             return toolStrip;
+        }
+
+        /**
+         * Extract icons from shell32.dll
+         * 
+         * @param index
+         * @return icon
+         * 
+         */
+        private System.Drawing.Icon getIconFromIndex(int index)
+        {     
+            IntPtr[] largeIcon = new IntPtr[1];       
+            ExtractIconEx("shell32.dll", index-1, largeIcon, null, 1);
+            return System.Drawing.Icon.FromHandle(largeIcon[0]);
         }
     }
 }

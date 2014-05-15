@@ -29,6 +29,7 @@ using System.IO;
 using System.IO.Pipes;
 using System.Runtime.Serialization.Formatters.Binary;
 using BandObjectLib;
+using mshtml;
 
 namespace CTIclient
 {
@@ -497,16 +498,22 @@ namespace CTIclient
          */
         private void CallControlView_ExplorerAttached(object sender, EventArgs e)
         {
-            // Set window events for DOMChnage & tabfocus
+            // Set window events for DOMChange & tabfocus
             Explorer.DocumentComplete += 
                 new SHDocVw.DWebBrowserEvents2_DocumentCompleteEventHandler(Explorer_DocumentComplete);
-            Explorer.WindowStateChanged += new SHDocVw.DWebBrowserEvents2_WindowStateChangedEventHandler(Explorer_WindowStateChanged);
-
+            Explorer.WindowStateChanged += 
+                new SHDocVw.DWebBrowserEvents2_WindowStateChangedEventHandler(Explorer_WindowStateChanged);
+                       
             // Init settings
             if (extensionList == null)
             {                
-                getSettingsList();                
+                getSettings();                
             }
+        }
+
+        void BHOController_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            MessageBox.Show("key pressed");
         }
 
         /**
@@ -519,10 +526,14 @@ namespace CTIclient
          */
         private void Explorer_DocumentComplete(object pDisp, ref object URL)
         {
+            // Scan DOM for phonenumbers
             domChanger.changeDOM(this.Explorer);
+
+            // Attach key down event for key shortcuts
+            callControlView.enableShortCuts(this.Explorer);
         }
 
-        /**
+         /**
          * Handle WindowStateChange event
          * Update the tab on statechange
          * 
@@ -588,10 +599,20 @@ namespace CTIclient
             this.Controls.AddRange(new Control[] { callControlView.InitializeComponent() });
             this.MinSize = new Size(220, 32);
             this.BackColor = Color.Transparent;
-
+            
             // Perform final layout
             this.ResumeLayout(false);
             this.PerformLayout();
+        }
+
+        void BHOController_KeyDown(object sender, KeyEventArgs e)
+        {
+            MessageBox.Show("keydown");
+        }
+
+        void BHOController_KeyPressDown(object sender, KeyPressEventArgs e)
+        {
+            MessageBox.Show("keydown");
         }
 
         /**
@@ -612,7 +633,7 @@ namespace CTIclient
          * Get settings from server
          * 
          */
-        private void getSettingsList()
+        private void getSettings()
         {
             // Create command object
             this.commandObject = new CommandObject(command: "getSettings", 
@@ -855,9 +876,26 @@ namespace CTIclient
             return this.extensionList;
         }
 
+        /**
+         * Find out if this is the active tab
+         * 
+         * @return true if active
+         * 
+         */
         public Boolean getActiveTab()
         {
             return this.isActiveTab;
+        }
+
+        /**
+         * Get the settingsList
+         * 
+         * @return the settingsList
+         * 
+         */
+        public Dictionary<String,String> getSettingsList()
+        {
+            return this.settingsList;
         }
 
         /**
@@ -878,5 +916,5 @@ namespace CTIclient
             this.historyView.componentDispose();
             base.Dispose(disposing);            
         }
-    }
+    } 
 }

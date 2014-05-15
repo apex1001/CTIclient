@@ -39,8 +39,9 @@ namespace CTIclient
             this.historyList = controller.getHistoryList(); 
             if (this.historyList != null && this.historyList.Length > 0)
             {
-                InitializeComponent();
+                InitializeComponent();                
                 this.ShowDialog();
+                this.Activate();    
             }
             else
             {
@@ -75,11 +76,17 @@ namespace CTIclient
          */
         private void dataGridView_CellContentClick(object sender, DataGridViewCellEventArgs e)
         {
-            if (e.ColumnIndex == 0)
+            try
             {
-                DataGridView dataGridView = (DataGridView)sender;
-                DataGridViewCell cell = dataGridView.Rows[e.RowIndex].Cells[e.ColumnIndex];
-                this.controller.dial(Util.CleanPhoneNumber(cell.Value.ToString()));
+                if (e.ColumnIndex == 0)
+                {
+                    DataGridView dataGridView = (DataGridView)sender;
+                    DataGridViewCell cell = dataGridView.Rows[e.RowIndex].Cells[e.ColumnIndex];
+                    this.controller.dial(Util.CleanPhoneNumber(cell.Value.ToString()));
+                }
+            }
+            catch
+            {
             }
         }
 
@@ -165,7 +172,7 @@ namespace CTIclient
             dataGridView.Columns.AddRange(new DataGridViewColumn[] { dialledParty, start, duration });
 
             // Iterate the history list
-            foreach (String[] historyItem in historyList)
+            foreach (String[] historyItem in this.historyList)
             {
                 row = (DataGridViewRow)dataGridView.Rows[0].Clone();
                 row.Resizable = DataGridViewTriState.False;
@@ -195,7 +202,7 @@ namespace CTIclient
             this.Text = "History";
             this.MinimumSize = new System.Drawing.Size(windowWidth + 17, windowHeight + 22);
             this.MaximumSize = new System.Drawing.Size(windowWidth + 17, windowHeight + 38);
-            this.StartPosition = FormStartPosition.CenterScreen;           
+            this.StartPosition = FormStartPosition.CenterScreen;
             this.ResumeLayout(false);            
         }
     }
