@@ -37,8 +37,8 @@ namespace CTIclient
      */
     public class CallControlView : ICTIView
     {
-        private BHOController controller;
-        private BHOController toolbar;
+        private ClientController controller;
+        private ClientController toolbar;
         private ToolStrip toolStrip;
         private ToolStripDropDownButton dropMenu;
         private ToolStripMenuItem settings;
@@ -56,7 +56,7 @@ namespace CTIclient
         public extern static int ExtractIconEx(string libName, int iconIndex,
         IntPtr[] largeIcon, IntPtr[] smallIcon, int nIcons);
         
-        public CallControlView(BHOController toolbar)
+        public CallControlView(ClientController toolbar)
         {
             this.toolbar = toolbar;
             this.controller = toolbar;

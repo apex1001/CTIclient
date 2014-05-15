@@ -21,7 +21,7 @@ namespace CTIclient
      */ 
     class SettingsView : Form, ICTIView
     {
-        private BHOController controller;
+        private ClientController controller;
         private TableLayoutPanel tableLayoutPanel;
         private Label label1;
         private Label label2;
@@ -41,7 +41,7 @@ namespace CTIclient
 
         private int extensionCount;
 
-        public SettingsView(BHOController controller)
+        public SettingsView(ClientController controller)
         {
             this.controller = controller;
         }
@@ -90,21 +90,29 @@ namespace CTIclient
          */
         private void addButton_Click(object sender, EventArgs e)
         {
+            String phoneNumber = this.newPhoneNumberBox.Text;
+            String mobilePhoneNumber = this.controller.getMobilePhoneNumber();
+                        
             if (!this.newPhoneNumberBox.Text.Equals(""))
             {
-                int itemLength = 6;
-                String[] item = new String[itemLength];
-                item[0] = null;
-                item[1] = this.newPhoneNumberBox.Text.Trim();
-                item[3] = this.controller.getUsername();
-                item[4] = this.newPinBox.Text.Trim();
-                item[5] = "t";
-                item[2] = "f";
-                if (this.newRadioButton.Checked) item[2] = "t";
+                if (phoneNumber.StartsWith("06") && (phoneNumber.Equals(mobilePhoneNumber) || mobilePhoneNumber.Equals(""))
+                    || !phoneNumber.StartsWith("06"))
+                {
+                    int itemLength = 6;
+                    String[] item = new String[itemLength];
+                    item[0] = null;
+                    item[1] = phoneNumber.Trim();
+                    item[3] = this.controller.getUsername();
+                    item[4] = this.newPinBox.Text.Trim();
+                    item[5] = "t";
+                    item[2] = "f";
+                    if (this.newRadioButton.Checked) item[2] = "t";
 
-                String[][] tempArray = new String[1][];
-                this.extensionList = Util.ArrayAddItem(item, this.extensionList, itemLength);
-                this.InitializeComponent();                
+                    String[][] tempArray = new String[1][];
+                    this.extensionList = Util.ArrayAddItem(item, this.extensionList, itemLength);
+                    this.InitializeComponent();
+                }
+                else Util.showMessageBox("Dit nummer staat niet op uw naam!");
             }           
         }
 
@@ -143,7 +151,8 @@ namespace CTIclient
          */
         private void cancelButton_Click(object sender, EventArgs e)
         {
-            this.extensionList = controller.getExtensionList();                     
+            this.extensionList = controller.getExtensionList();
+            this.deletedExtensionList = null;       
             this.Dispose();            
         }
 

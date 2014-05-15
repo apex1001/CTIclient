@@ -13,11 +13,11 @@ namespace CTIclient
 {
     class StatusPipeServer
     {
-        private BHOController controller;
+        private ClientController controller;
         private String pipeName;
         private CommandObject commandObject;
 
-        public StatusPipeServer(BHOController controller, String pipeName)
+        public StatusPipeServer(ClientController controller, String pipeName)
         {
             this.controller = controller;
             this.pipeName = pipeName;

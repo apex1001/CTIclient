@@ -22,9 +22,9 @@ namespace CTIclient
     class HistoryView : Form, ICTIView
     {
         private String[][] historyList;
-        private BHOController controller;    
+        private ClientController controller;    
                 
-        public HistoryView(BHOController controller)
+        public HistoryView(ClientController controller)
         {
             this.controller = controller;     
         }

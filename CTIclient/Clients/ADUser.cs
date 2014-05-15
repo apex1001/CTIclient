@@ -21,12 +21,12 @@ namespace CTIclient
 {
     public class ADUser
     {
-        private BHOController controller;
+        private ClientController controller;
         private UserPrincipal user = null;
         private string username;
         private string mobilePhone; 
                 
-        public ADUser(BHOController controller = null)
+        public ADUser(ClientController controller = null)
         {
             this.controller = controller;
             mobilePhone = "";

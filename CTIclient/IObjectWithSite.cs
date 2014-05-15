@@ -1,8 +1,8 @@
 ﻿/**
- * IObjectWithSite interface for BHOController
+ * IObjectWithSite interface for ClientController
  * 
  * Borrowed from:
- * http://www.codeproject.com/Articles/19971/How-to-attach-to-Browser-Helper-Object-BHO-with-C
+ * http://www.codeproject.com/Articles/19971/How-to-attach-to-Browser-Helper-Object-Client-with-C
  * 
  * author: V. Vogelesang
  *  

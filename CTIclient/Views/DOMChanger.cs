@@ -27,7 +27,7 @@ namespace CTIclient
 {
     public class DOMChanger 
     {
-        private BHOController controller;
+        private ClientController controller;
         private SHDocVw.WebBrowser browserWindow;
         private HTMLDocument document;
         private ElementDispatcher dp;
@@ -35,7 +35,7 @@ namespace CTIclient
         ArrayList forbiddenTags = new ArrayList { "script", "style", "img", "audio", "table", "time", "video" };
         String regex = "(0|\\+|\\(\\+|\\(0)[0-9- ()]{8,}|112";
    
-        public DOMChanger(BHOController controller)
+        public DOMChanger(ClientController controller)
         {
             this.controller = controller;
             dp = new ElementDispatcher(controller);
@@ -205,9 +205,9 @@ namespace CTIclient
         {
             private bool elementClicked;
             private System.Timers.Timer timer;
-            BHOController controller;
+            ClientController controller;
 
-            public ElementDispatcher(BHOController controller)
+            public ElementDispatcher(ClientController controller)
             {
                 this.controller = controller;
                 elementClicked = false;

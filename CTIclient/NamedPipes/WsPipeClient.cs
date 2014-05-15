@@ -22,12 +22,12 @@ namespace CTIclient
 {
     class WsPipeClient
     {
-        private BHOController controller;
+        private ClientController controller;
         private String pipeName;
         private NamedPipeClientStream inClient;
         private NamedPipeClientStream outClient;
 
-        public WsPipeClient(BHOController controller, String pipeName)
+        public WsPipeClient(ClientController controller, String pipeName)
         {
             this.controller = controller;
             this.pipeName = pipeName;

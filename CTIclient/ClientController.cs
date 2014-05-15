@@ -35,13 +35,13 @@ namespace CTIclient
 {
 
     /**
-     * BHOController class
+     * ClientController class
      * Controls the CTI client
      * 
      */
     [Guid("E0DE0DE0-36D4-4B08-AF68-0333EAC71C71")]
     [BandObject("CTIClient", BandObjectStyle.Horizontal | BandObjectStyle.ExplorerToolbar, HelpText = "CTIclient")]
-    public class BHOController : BandObject
+    public class ClientController : BandObject
     {
         private ADUser adUser;
         private DOMChanger domChanger;
@@ -81,7 +81,7 @@ namespace CTIclient
          * CallControlView constructor
          * 
          */
-        public BHOController()
+        public ClientController()
         {
             // Create new statusObject & read the settings file
             this.statusObject = new CommandObject("", "", "", "", "", "", "", "", null);
@@ -511,7 +511,7 @@ namespace CTIclient
             }
         }
 
-        void BHOController_KeyPress(object sender, KeyPressEventArgs e)
+        void ClientController_KeyPress(object sender, KeyPressEventArgs e)
         {
             MessageBox.Show("key pressed");
         }
@@ -605,12 +605,12 @@ namespace CTIclient
             this.PerformLayout();
         }
 
-        void BHOController_KeyDown(object sender, KeyEventArgs e)
+        void ClientController_KeyDown(object sender, KeyEventArgs e)
         {
             MessageBox.Show("keydown");
         }
 
-        void BHOController_KeyPressDown(object sender, KeyPressEventArgs e)
+        void ClientController_KeyPressDown(object sender, KeyPressEventArgs e)
         {
             MessageBox.Show("keydown");
         }
@@ -790,7 +790,7 @@ namespace CTIclient
 
             catch (Exception e)
             {
-                Util.showMessageBox("BHOcontroller err" + e.Message + e.StackTrace);
+                Util.showMessageBox("ClientController err" + e.Message + e.StackTrace);
             }
         }
 
@@ -863,6 +863,18 @@ namespace CTIclient
         public String getRole()
         {
             return this.statusObject.Role;
+        }
+
+        /**
+         * Get the mobile phone of the current user
+         * if registered in AD.
+         * 
+         * @return String phonenumber
+         * 
+         */
+        public String getMobilePhoneNumber()
+        {
+            return this.adUser.getMobilePhone();
         }
         
         /**
