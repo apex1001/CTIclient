@@ -143,8 +143,20 @@ namespace CTIclient
          */
         private void cancelButton_Click(object sender, EventArgs e)
         {
-            this.extensionList = controller.getExtensionList();            
-            this.Dispose();
+            this.extensionList = controller.getExtensionList();                     
+            this.Dispose();            
+        }
+
+        /**
+         * Catch close with X 
+         * 
+         * @param FormClosingEventArgs
+         * 
+         */
+        protected override void OnFormClosing(FormClosingEventArgs e)
+        {
+            cancelButton_Click(null, null);
+            base.OnFormClosing(e);
         }
 
         /**
@@ -153,7 +165,15 @@ namespace CTIclient
          */
         protected override void Dispose(bool disposing)
         {
-            this.Hide();          
+            this.Hide();
+            try
+            {
+                // Reinitialize settingsView if changes not saved
+                InitializeComponent();
+            }
+            catch
+            {
+            }
         }
 
         /**
@@ -195,8 +215,8 @@ namespace CTIclient
             try
             {                
                 int rowCount = this.extensionList.Length + 5;
-                string mask = "9999999999";
-                string pinMask = "9999";
+                String mask = "9999999999";
+                String pinMask = "9999";
 
                 if (this.extensionCount > 0)
                 {
@@ -242,7 +262,8 @@ namespace CTIclient
                         this.phoneNumberBoxes[i].Enabled = false;
                         this.phoneNumberBoxes[i].Name = "phoneNumber" + i.ToString();
                         this.phoneNumberBoxes[i].Text = extensionItems.GetValue(1).ToString();
-                        this.phoneNumberBoxes[i].Mask = mask;
+                        if (!Char.IsLetter(extensionItems.GetValue(1).ToString(),0))
+                            this.phoneNumberBoxes[i].Mask = mask;
                         this.phoneNumberBoxes[i].HidePromptOnLeave = true;
 
                         // Pin textbox

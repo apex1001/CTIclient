@@ -33,7 +33,7 @@ namespace CTIclient
         private ElementDispatcher dp;
 
         ArrayList forbiddenTags = new ArrayList { "script", "style", "img", "audio", "table", "time", "video" };
-        String regex = "(0|\\+|\\(\\+|\\(0)[0-9- ()]{9,}";
+        String regex = "(0|\\+|\\(\\+|\\(0)[0-9- ()]{8,}|112";
    
         public DOMChanger(BHOController controller)
         {
