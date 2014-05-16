@@ -52,6 +52,7 @@ namespace CTIclient
          */
         public void showSettingsMenu()
         {
+            update();
             this.ShowDialog();                   
         }
 
@@ -175,14 +176,6 @@ namespace CTIclient
         protected override void Dispose(bool disposing)
         {
             this.Hide();
-            try
-            {
-                // Reinitialize settingsView if changes not saved
-                InitializeComponent();
-            }
-            catch
-            {
-            }
         }
 
         /**

@@ -134,7 +134,12 @@ namespace CTIclient
 
             // Attach explorer & document event
             this.ExplorerAttached += new EventHandler(CallControlView_ExplorerAttached);
-            this.isActiveTab = true;
+            this.isActiveTab = true;            
+        }
+
+        void Parent_LostFocus(object sender, EventArgs e)
+        {
+            MessageBox.Show ("lost focus");
         }
 
         /**
@@ -143,8 +148,8 @@ namespace CTIclient
          * @param commandObject;
          * 
          */
-        public void receiveCommand(string message)
-        {
+        public void receiveCommand(String message)
+        {            
             CommandObject tempObject = Util.fromJSON(message);            
             if (tempObject != null)
             {
@@ -202,6 +207,21 @@ namespace CTIclient
                     else hangup(this.statusObject.To, false);
                 }
 
+                // Receiving termination of call from other tab. Value field has terminated To extension
+                if (command.Equals("terminate"))
+                {
+                    String[] value = (String[])commandObject.Value.GetValue(0);
+                    if (value != null)
+                    {
+                        String extension = value.GetValue(0).ToString();
+                        if (this.statusObject.Status.Equals(CallConnected) &&
+                            this.statusObject.To.Equals(extension) || this.statusObject.Target.Equals(extension))
+                        {
+                            hangup(extension, false);
+                        }
+                    }
+                }
+
                 // Receiving 403 busy from the REST interface
                 if (command.Equals("call") && callStatus.Equals(CallBusy))
                 {
@@ -216,8 +236,8 @@ namespace CTIclient
                     }
                 }
 
-                // Receviing call connected confirmed
-                if (command.Equals("call") && callStatus.Equals(CallConnected))
+                // Receiving call connected confirmed
+                if (command.Equals("call")  && callStatus.Equals(CallConnected))
                 {
                     this.statusObject.Status = CallConnected;
                     this.statusObject.To = commandObject.To;
@@ -228,6 +248,12 @@ namespace CTIclient
                 if (command.Equals("call") && callStatus.Equals(CallSetup))
                 {
                     this.statusObject.Status = CallSetup;                    
+                }
+
+                // Receiving transfer from other tab
+                if (command.Equals("transfer") && callStatus.Equals(CallConnected))
+                {
+                    clearCallStatus();
                 }
 
                 // Update statusPipeServer with tab status
@@ -457,11 +483,9 @@ namespace CTIclient
          */
         private void sendCommand(CommandObject command)
         {            
+            // Send message to the server, via wsPipeServer & WebSocketClient
             string json = Util.toJSON(command);
             wsPipeClient.sendMessage(json);
-      
-            // Activate  AES later
-            //wsPipeClient.sendMessage(AESModule.EncryptRJ128(sKy, sIV, json));
 
             // Update statusPipeServer with tab status
             statusPipeClient.putTabStatusMap(this.getCurrentTabStatus());
@@ -503,17 +527,12 @@ namespace CTIclient
                 new SHDocVw.DWebBrowserEvents2_DocumentCompleteEventHandler(Explorer_DocumentComplete);
             Explorer.WindowStateChanged += 
                 new SHDocVw.DWebBrowserEvents2_WindowStateChangedEventHandler(Explorer_WindowStateChanged);
-                       
+                               
             // Init settings
             if (extensionList == null)
             {                
                 getSettings();                
             }
-        }
-
-        void ClientController_KeyPress(object sender, KeyPressEventArgs e)
-        {
-            MessageBox.Show("key pressed");
         }
 
         /**
@@ -603,16 +622,6 @@ namespace CTIclient
             // Perform final layout
             this.ResumeLayout(false);
             this.PerformLayout();
-        }
-
-        void ClientController_KeyDown(object sender, KeyEventArgs e)
-        {
-            MessageBox.Show("keydown");
-        }
-
-        void ClientController_KeyPressDown(object sender, KeyPressEventArgs e)
-        {
-            MessageBox.Show("keydown");
         }
 
         /**
@@ -708,7 +717,7 @@ namespace CTIclient
             {
                 this.settingsList = settingsList;
                 this.settingsList["ccsUrl"] = "ws://" + settingsList["ccsHost"] + ":" + settingsList["ccsPort"] + "/";
-                applyStatusContstants(settingsList);
+                applyStatusConstants(settingsList);
             }
             catch
             {
@@ -721,7 +730,7 @@ namespace CTIclient
          * @param settingsList
          * 
          */
-        private void applyStatusContstants(Dictionary<String, String> settingsList)
+        private void applyStatusConstants(Dictionary<String, String> settingsList)
         {
             this.CallSetup = settingsList["CallSetup"];
             this.CallConnected = settingsList["CallConnected"];
@@ -748,7 +757,9 @@ namespace CTIclient
             // Create websocket client
             try
             {
-                this.wsClient = new WebSocketClient(this.settingsList["ccsUrl"], this.wsPipeName);               
+                String sKy = settingsList["sKy"];
+                String sIV = settingsList["sIV"];
+                this.wsClient = new WebSocketClient(this.settingsList["ccsUrl"], this.wsPipeName, new AESModule(sKy,sIV));               
             }
             catch
             {
@@ -785,7 +796,7 @@ namespace CTIclient
                 this.statusObject = (CommandObject)tabStatusMap["statusObject"];
                 this.settingsList = (Dictionary<String, String>)tabStatusMap["settingsList"];
                 this.extensionList = (String[][])tabStatusMap["extensionList"];
-                applyStatusContstants(this.settingsList);
+                applyStatusConstants(this.settingsList);
             }
 
             catch (Exception e)

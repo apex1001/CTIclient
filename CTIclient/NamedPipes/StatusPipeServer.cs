@@ -31,7 +31,6 @@ namespace CTIclient
             {
                 Task.Factory.StartNew(() =>
                 {
-                    int clientCount = 0;
                     Dictionary<string, object> tabStatusMap = initTabStatusMap();
                     while (true)
                     {
@@ -39,8 +38,6 @@ namespace CTIclient
                         {
                             var server = new NamedPipeServerStream(this.pipeName, PipeDirection.InOut, 254);
                             server.WaitForConnection();
-                            clientCount++;
-                            //Util.showMessageBox("client count:" + clientCount);
                             Task.Factory.StartNew(() =>
                             {
                                 StreamReader reader = new StreamReader(server);

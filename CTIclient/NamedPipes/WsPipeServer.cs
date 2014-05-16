@@ -65,7 +65,10 @@ namespace CTIclient
                                     else if (message.Equals("closeTab"))
                                         this.serverList.Remove(serverOut);
                                     else
-                                        wsClient.sendMessage(message);                                
+                                    {
+                                        wsClient.sendMessage(message);
+                                        sendMessage(message);
+                                    }
                                 }                                
                             }
                         });

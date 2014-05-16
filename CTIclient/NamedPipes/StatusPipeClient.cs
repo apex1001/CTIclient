@@ -38,23 +38,22 @@ namespace CTIclient
                     StreamWriter writer = new StreamWriter(client);
                     writer.WriteLine("get");
                     writer.Flush();
-                    
+
 
                     // Parse response into tabStatusMap object
                     BinaryFormatter formatter = new BinaryFormatter();
-                    Dictionary<String, Object> tabStatusMap = (Dictionary<String, Object>)formatter.Deserialize(reader.BaseStream);                    
+                    Dictionary<String, Object> tabStatusMap = (Dictionary<String, Object>)formatter.Deserialize(reader.BaseStream);
                     if (checkMapValid(tabStatusMap))
-                    {  
+                    {
                         return tabStatusMap;
                     }
                     else return null;
 
                 }
-                else Util.showMessageBox("nostream");
+                else return null;
             }
-            catch (Exception e)
-            {
-                Util.showMessageBox("error" + e.Message);
+            catch 
+            {    
             }
             return null;
         }
@@ -81,9 +80,8 @@ namespace CTIclient
                 formatter.Serialize(writer.BaseStream, tabStatusMap);
                 writer.Flush();
             }
-            catch (Exception e)
+            catch 
             {
-                Util.showMessageBox("error" + e.Message);
             }            
         }
 
@@ -104,9 +102,8 @@ namespace CTIclient
                 return client;
             }
 
-            catch (Exception e)
+            catch 
             {
-                Util.showMessageBox("error" + e.Message);
             }
             return null;
         }

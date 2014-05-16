@@ -58,9 +58,8 @@ namespace CTIclient
                         }
                     }
                 }
-                catch (Exception e)
-                {
-                    Util.showMessageBox("WSC error1" + e.Message + e.StackTrace);                    
+                catch 
+                {                    
                 }
             });    
         }
@@ -105,9 +104,8 @@ namespace CTIclient
                 return client;
             }
 
-            catch (Exception e)
-            {
-                Util.showMessageBox("WSC error2" + e.Message);
+            catch
+            {               
             }
             return null;
         }

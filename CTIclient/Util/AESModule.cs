@@ -1,9 +1,8 @@
 ﻿/**
- * Crypto module. Borrowed from:
+ * Crypto module. Mostly based on the information @:
  * http://stackoverflow.com/questions/11873878/c-sharp-encryption-to-php-decryption
+ * http://msdn.microsoft.com/en-us/library/system.security.cryptography.rijndael(v=vs.110).aspx
  *
- * Edit: Switched to 128 bit
- *  
  * @author V. Vogelesang
  * 
  */
@@ -23,9 +22,38 @@ namespace CTIclient
      * Encrypt/decrypt 128 bit AES Base64
      * 
      */
-    public static class AESModule
+    public class AESModule
     {
+        private String sKy;
+        private String sIV;
+        private RijndaelManaged rijndaelModule;
 
+        public AESModule(String sKy, String sIV)
+        {
+            this.sKy = sKy;
+            this.sIV = sIV;
+            this.rijndaelModule = createNewRijndael();
+        }
+
+        /**
+         * Create new Rijndeal module
+         * 
+         * @return rijndeal module
+         * 
+         */
+        private RijndaelManaged createNewRijndael()
+        {
+            // Create Rijndael once for performance reasons, also use 128-bit mode
+            // since it is faster than 256-bit mode.
+            return new RijndaelManaged()
+            {
+                Padding = PaddingMode.Zeros,
+                Mode = CipherMode.CBC,
+                KeySize = 128,
+                BlockSize = 128
+            };
+        }
+        
         /**
          * Decrypt 128 Bit Base64 encoded String
          * 
@@ -35,27 +63,26 @@ namespace CTIclient
          * @return plaintext
          * 
          */
-        public static string DecryptRJ128(string sKy, string sIV, string prm_text_to_decrypt)
+        public String DecryptRJ128(String prm_text_to_decrypt)
         {
-            var sEncryptedString = prm_text_to_decrypt;
-            var myRijndael = new RijndaelManaged()
-            {
-                Padding = PaddingMode.Zeros,
-                Mode = CipherMode.CBC,
-                KeySize = 128,
-                BlockSize = 128
-            };
-
+            // Get key and iv as byte array
             var key = Encoding.ASCII.GetBytes(sKy);
             var IV = Encoding.ASCII.GetBytes(sIV);
-            var decryptor = myRijndael.CreateDecryptor(key, IV);
-            var sEncrypted = Convert.FromBase64String(sEncryptedString);
+
+            // Create decryptor
+            var decryptor = this.rijndaelModule.CreateDecryptor(key, IV);
+
+            // Convert from base64 & create bytearray
+            var sEncrypted = Convert.FromBase64String(prm_text_to_decrypt);
             var fromEncrypt = new byte[sEncrypted.Length];
+
+            // Create memorystream from byte array, create cryptostream
             var msDecrypt = new MemoryStream(sEncrypted);
             var csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Read);
-            csDecrypt.Read(fromEncrypt, 0, fromEncrypt.Length);
 
-            return (Encoding.ASCII.GetString(fromEncrypt));
+            // Decrypt cryptostream and turn byte array to normal string, then return result
+            csDecrypt.Read(fromEncrypt, 0, fromEncrypt.Length);
+            return (Encoding.ASCII.GetString(fromEncrypt)).TrimEnd('\0');
         }
 
         /**
@@ -67,27 +94,28 @@ namespace CTIclient
          * @return ciphertext
          *
          */
-        public static string EncryptRJ128(string sKy, string sIV, string prm_text_to_encrypt)
+        public String EncryptRJ128(string prm_text_to_encrypt)
         {
-            var sToEncrypt = prm_text_to_encrypt;
-            var myRijndael = new RijndaelManaged()
-            {
-                Padding = PaddingMode.Zeros,
-                Mode = CipherMode.CBC,
-                KeySize = 128,
-                BlockSize = 128
-            };
-
+            // Get key and iv as byte array
             var key = Encoding.ASCII.GetBytes(sKy);
             var IV = Encoding.ASCII.GetBytes(sIV);
-            var encryptor = myRijndael.CreateEncryptor(key, IV);
+
+            // Create encryptor
+            var encryptor = this.rijndaelModule.CreateEncryptor(key, IV);
+
+            // Create memorystream and cryptostream
             var msEncrypt = new MemoryStream();
             var csEncrypt = new CryptoStream(msEncrypt, encryptor, CryptoStreamMode.Write);
-            var toEncrypt = Encoding.ASCII.GetBytes(sToEncrypt);
+
+            // Get bytearray from input string
+            var toEncrypt = Encoding.ASCII.GetBytes(prm_text_to_encrypt);
+            
+            // Write bytearray to cryptostream and memorystream
             csEncrypt.Write(toEncrypt, 0, toEncrypt.Length);
             csEncrypt.FlushFinalBlock();
+            
+            // Write encrypted memorystream to bytearray and return as base64 String
             var encrypted = msEncrypt.ToArray();
-
             return (Convert.ToBase64String(encrypted));
         }
     }
