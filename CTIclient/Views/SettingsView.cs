@@ -53,7 +53,7 @@ namespace CTIclient
         public void showSettingsMenu()
         {
             update();
-            this.ShowDialog();                   
+            this.Show();                   
         }
 
         /**

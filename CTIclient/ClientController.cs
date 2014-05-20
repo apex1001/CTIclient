@@ -62,6 +62,7 @@ namespace CTIclient
         private String[][] extensionList;
         private String[][] historyList;
         private Boolean isActiveTab;
+        private Boolean historyRequested = false;
 
         // Call status constants
         private String CallSetup;
@@ -183,7 +184,13 @@ namespace CTIclient
                     this.historyList = commandObject.Value;
                     wsPipeClient.sendMessage("closeConnection");
                     Thread.Sleep(100);
-                    doViewUpdate("historyView");
+
+                    // Update the view
+                    if (this.historyRequested)
+                    {
+                        doViewUpdate("historyView");                        
+                    }
+                    this.historyRequested = false;                 
                 }
 
                 // Receiving the url for the admin page
@@ -210,12 +217,14 @@ namespace CTIclient
                 // Receiving termination of call from other tab. Value field has terminated To extension
                 if (command.Equals("terminate"))
                 {
+                    //MessageBox.Show("received terminate, to: " + this.statusObject.To + " target: " + this.statusObject.Target);
+                    
                     String[] value = (String[])commandObject.Value.GetValue(0);
                     if (value != null)
                     {
                         String extension = value.GetValue(0).ToString();
                         if (this.statusObject.Status.Equals(CallConnected) &&
-                            this.statusObject.To.Equals(extension) || this.statusObject.Target.Equals(extension))
+                            (this.statusObject.To.Equals(extension) || this.statusObject.Target.Equals(extension)))
                         {
                             hangup(extension, false);
                         }
@@ -241,6 +250,7 @@ namespace CTIclient
                 {
                     this.statusObject.Status = CallConnected;
                     this.statusObject.To = commandObject.To;
+                    this.statusObject.Target = commandObject.Target;
                     doViewUpdate("callControlView");                   
                 }
 
@@ -331,16 +341,18 @@ namespace CTIclient
         {
             if ((this.statusObject.Status.Equals(CallConnected) || this.statusObject.Status.Equals(CallSetup)) &&
                 !to.Equals("") && (to.Equals(this.statusObject.To) || to.Equals(this.statusObject.Target)))
-            {
+            {                
                 // Terminate the connection if offhook was pressed (default)
                 if (terminateLine)
                 {
+                    //MessageBox.Show("a" + to);
                     // Terminate the given line
                     commandObject.Command = "terminate";
                     commandObject.Status = CallTerminated;
                     commandObject.From = this.statusObject.From;
                     commandObject.To = to;
                     commandObject.Target = "";
+                    commandObject.Value = new String[1][] {new String[1] { to }};  
                     sendCommand(commandObject);
                     Thread.Sleep(200);
                 }
@@ -348,6 +360,7 @@ namespace CTIclient
                 // Make 'target' the new 'to' if it is the only call left
                 if (to.Equals(this.statusObject.To) && !this.statusObject.Target.Equals(""))
                 {
+                    //MessageBox.Show("b" + to);
                     this.statusObject.To = this.statusObject.Target;
                     this.statusObject.Target = "";
                     commandObject.To = this.statusObject.To;
@@ -359,6 +372,7 @@ namespace CTIclient
                 // Clear 'target', leaving only 'to'.
                 else if (to.Equals(this.statusObject.Target))
                 {
+                    //MessageBox.Show("c" + to);
                     this.statusObject.Target = "";
                     commandObject.Target = "";
                     commandObject.To = this.statusObject.To;
@@ -367,8 +381,9 @@ namespace CTIclient
                 }
 
                 // If there was only one call clear everything
-                else
-                {                        
+                else if (to.Equals(this.statusObject.To) && this.statusObject.Target.Equals(""))
+                {
+                    //MessageBox.Show("hangup to" + to + this.statusObject.To + "target" + this.statusObject.Target);
                     clearCallStatus();
                 }
 
@@ -387,7 +402,8 @@ namespace CTIclient
         public void transfer(String to, String target)
         {
             if(this.statusObject.Status.Equals(CallConnected) && 
-                !target.Equals(this.statusObject.To) && !target.Equals(this.statusObject.From))
+                !target.Equals(this.statusObject.To) && 
+                !target.Equals(this.statusObject.From))
             {
                 commandObject.Command = "transfer";            
                 commandObject.From = this.statusObject.From;
@@ -442,11 +458,12 @@ namespace CTIclient
          */
         public void showHistory()
         {
+            this.historyRequested = true;
             this.historyList = null;
             commandObject.Command = "getHistory";
             commandObject.User = this.statusObject.User;
             commandObject.Value = null;
-            sendCommand(commandObject);
+            sendCommand(commandObject);         
         }
 
         /**
@@ -508,7 +525,7 @@ namespace CTIclient
             }
             else
             {
-                viewList[viewName].update();
+                viewList[viewName].update();             
             }           
         }
 
@@ -527,7 +544,7 @@ namespace CTIclient
                 new SHDocVw.DWebBrowserEvents2_DocumentCompleteEventHandler(Explorer_DocumentComplete);
             Explorer.WindowStateChanged += 
                 new SHDocVw.DWebBrowserEvents2_WindowStateChangedEventHandler(Explorer_WindowStateChanged);
-                               
+                   
             // Init settings
             if (extensionList == null)
             {                
@@ -566,7 +583,7 @@ namespace CTIclient
             if (dwWindowStateFlags == 3)
             {
                 this.isActiveTab = true;
-
+   
                 // Get tabStatus from statusPipeServer
                 getTabSettings();
 
@@ -579,7 +596,10 @@ namespace CTIclient
                 else
                     doViewUpdate("callControlView");
             }
-            else this.isActiveTab = false;
+            else
+            {
+                this.isActiveTab = false;
+            }
         }
 
         /**
@@ -919,6 +939,17 @@ namespace CTIclient
         public Dictionary<String,String> getSettingsList()
         {
             return this.settingsList;
+        }
+
+        /**
+         * Get the current call status
+         * 
+         * @return call status
+         * 
+         */
+        public String getCallStatus()
+        {
+            return this.statusObject.Status;
         }
 
         /**

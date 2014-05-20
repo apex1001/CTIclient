@@ -22,10 +22,12 @@ namespace CTIclient
     class HistoryView : Form, ICTIView
     {
         private String[][] historyList;
+        private Dictionary<String, String> settingsList;
         private ClientController controller;    
                 
         public HistoryView(ClientController controller)
         {
+            this.settingsList = controller.getSettingsList();
             this.controller = controller;     
         }
 
@@ -39,9 +41,8 @@ namespace CTIclient
             this.historyList = controller.getHistoryList(); 
             if (this.historyList != null && this.historyList.Length > 0)
             {
-                InitializeComponent();                
-                this.ShowDialog();
-                this.Activate();    
+                InitializeComponent();
+                this.ShowDialog();               
             }
             else
             {
@@ -82,12 +83,26 @@ namespace CTIclient
                 {
                     DataGridView dataGridView = (DataGridView)sender;
                     DataGridViewCell cell = dataGridView.Rows[e.RowIndex].Cells[e.ColumnIndex];
-                    this.controller.dial(Util.CleanPhoneNumber(cell.Value.ToString()));
+                    if (!getActiveCall())
+                        this.controller.dial(Util.CleanPhoneNumber(cell.Value.ToString()));
                 }
             }
             catch
             {
             }
+        }
+
+        /**
+         * Check if there is an active call
+         * 
+         * @return true if active call
+         * 
+         */
+        private bool getActiveCall()
+        {
+            String status = this.controller.getCallStatus();
+            return (status.Equals(this.settingsList["CallSetup"]) 
+                    || status.Equals(this.settingsList["CallConnected"]));
         }
 
         /**

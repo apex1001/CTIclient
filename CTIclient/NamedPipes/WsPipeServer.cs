@@ -73,9 +73,8 @@ namespace CTIclient
                             }
                         });
                     }
-                    catch (Exception e)
-                    {
-                        Util.showMessageBox("WSP Error" + e.Message);
+                    catch 
+                    {                       
                     }
                 }
             });
@@ -97,9 +96,8 @@ namespace CTIclient
                     writer.WriteLine(message);                    
                     writer.Flush();                  
                 }
-                catch (Exception e)
-                {
-                    Util.showMessageBox("WSP error" + e.Message);                    
+                catch 
+                {                                 
                 }    
             }            
         }

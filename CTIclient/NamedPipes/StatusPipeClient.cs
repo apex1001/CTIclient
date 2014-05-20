@@ -39,7 +39,6 @@ namespace CTIclient
                     writer.WriteLine("get");
                     writer.Flush();
 
-
                     // Parse response into tabStatusMap object
                     BinaryFormatter formatter = new BinaryFormatter();
                     Dictionary<String, Object> tabStatusMap = (Dictionary<String, Object>)formatter.Deserialize(reader.BaseStream);

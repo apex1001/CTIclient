@@ -66,18 +66,16 @@ namespace CTIclient
                                 }
                             });
                         }
-                        catch (Exception e)
-                        {
-                            Util.showMessageBox("error" + e.Message);
+                        catch
+                        {                            
                         }
                     }
 
                 });
 
             }
-            catch (Exception e)
-            {
-                Util.showMessageBox("error" + e.Message);
+            catch 
+            {                
             }
         }
 
