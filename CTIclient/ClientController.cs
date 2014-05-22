@@ -62,7 +62,7 @@ namespace CTIclient
         private String[][] extensionList;
         private String[][] historyList;
         private Boolean isActiveTab;
-        private Boolean historyRequested = false;
+        private Boolean extensionValid;
 
         // Call status constants
         private String CallSetup;
@@ -163,15 +163,12 @@ namespace CTIclient
                 {
                     this.statusObject.From = commandObject.From;
                     this.statusObject.Pin = commandObject.Pin;
-                    this.statusObject.Role = commandObject.Role;                    
+                    this.statusObject.Role = commandObject.Role;
                     this.extensionList = commandObject.Value;
                     wsPipeClient.sendMessage("closeConnection");
                     
                     // Update statusPipeServer with tab status
                     statusPipeClient.putTabStatusMap(this.getCurrentTabStatus());
-
-                    // Update the view
-                    doViewUpdate("settingsView");
 
                     // Add admin option
                     if (this.statusObject.Role.Equals("admin"))
@@ -183,14 +180,6 @@ namespace CTIclient
                 {
                     this.historyList = commandObject.Value;
                     wsPipeClient.sendMessage("closeConnection");
-                    Thread.Sleep(100);
-
-                    // Update the view
-                    if (this.historyRequested)
-                    {
-                        doViewUpdate("historyView");                        
-                    }
-                    this.historyRequested = false;                 
                 }
 
                 // Receiving the url for the admin page
@@ -216,9 +205,7 @@ namespace CTIclient
 
                 // Receiving termination of call from other tab. Value field has terminated To extension
                 if (command.Equals("terminate"))
-                {
-                    //MessageBox.Show("received terminate, to: " + this.statusObject.To + " target: " + this.statusObject.Target);
-                    
+                {                    
                     String[] value = (String[])commandObject.Value.GetValue(0);
                     if (value != null)
                     {
@@ -264,6 +251,28 @@ namespace CTIclient
                 if (command.Equals("transfer") && callStatus.Equals(CallConnected))
                 {
                     clearCallStatus();
+                }
+                
+                // Receiving extension check
+                if (command.Equals("checkExtension"))
+                {                    
+                    try
+                    {
+                        if (commandObject != null)
+                        {
+                            String[] value = (String[])commandObject.Value.GetValue(0);
+                            if (value != null)
+                            {
+                                String result = value.GetValue(0).ToString();
+                                this.extensionValid = result.Equals("true");
+                            }
+                            wsPipeClient.sendMessage("closeConnection");
+                        }
+                    }
+                    catch (Exception)
+                    {
+                        wsPipeClient.sendMessage("closeConnection");                       
+                    }
                 }
 
                 // Update statusPipeServer with tab status
@@ -383,7 +392,6 @@ namespace CTIclient
                 // If there was only one call clear everything
                 else if (to.Equals(this.statusObject.To) && this.statusObject.Target.Equals(""))
                 {
-                    //MessageBox.Show("hangup to" + to + this.statusObject.To + "target" + this.statusObject.Target);
                     clearCallStatus();
                 }
 
@@ -458,12 +466,21 @@ namespace CTIclient
          */
         public void showHistory()
         {
-            this.historyRequested = true;
+            // Get the history list
             this.historyList = null;
             commandObject.Command = "getHistory";
             commandObject.User = this.statusObject.User;
             commandObject.Value = null;
-            sendCommand(commandObject);         
+            sendCommand(commandObject);
+            
+            // Wait for the list to be sent then show it
+            for (int i=0; i < 200; i++)
+            {
+                if (this.historyList != null)
+                    break;            
+                Thread.Sleep(10);
+            }
+            historyView.showHistory();
         }
 
         /**
@@ -669,7 +686,7 @@ namespace CTIclient
                                                     user: this.statusObject.User,
                                                     pin: this.statusObject.Pin,
                                                     from: this.statusObject.From);
-            sendCommand(commandObject);
+            sendCommand(commandObject);           
         }
 
         /**
@@ -953,10 +970,39 @@ namespace CTIclient
         }
 
         /**
+         * Check with the controller if the phone/pin is valid
+         * 
+         * @param phonenumber
+         * @param pin
+         * @return boolean true if valid
+         * 
+         */
+        public Boolean checkExtensionValid(string phoneNumber, string pin)
+        {
+            extensionValid = false;
+
+            // Create command object
+            this.commandObject = new CommandObject(command: "checkExtension",
+                                                    from: phoneNumber,
+                                                    pin: pin
+                                                    );
+            sendCommand(commandObject);
+
+            // Wait for the status to change.
+            for (int i = 0; i < 200; i++)
+            {
+                if (extensionValid)
+                    return true;
+                Thread.Sleep(10);
+            }
+            return false;
+        }
+
+        /**
          * Dispose of toolbar
          * 
          */
-        protected override void Dispose(bool disposing)
+        protected override void Dispose(Boolean disposing)
         {
             if (disposing)
             {

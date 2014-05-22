@@ -78,8 +78,6 @@ namespace CTIclient
                 this.extensionList[i][2] = value;
             }
             this.controller.updateSettings(this.extensionList);
-            Thread.Sleep(100);
-
             this.Dispose();
         }
 
@@ -91,20 +89,35 @@ namespace CTIclient
          */
         private void addButton_Click(object sender, EventArgs e)
         {
-            String phoneNumber = this.newPhoneNumberBox.Text;
+            String phoneNumber = this.newPhoneNumberBox.Text.Trim();
             String mobilePhoneNumber = this.controller.getMobilePhoneNumber();
+            String pin = this.newPinBox.Text.Trim();
                         
             if (!this.newPhoneNumberBox.Text.Equals(""))
-            {
-                if (phoneNumber.StartsWith("06") && (phoneNumber.Equals(mobilePhoneNumber) || mobilePhoneNumber.Equals(""))
-                    || !phoneNumber.StartsWith("06"))
+            {                
+                // Check if the given cellular phone belongs to the user 
+                if (phoneNumber.StartsWith("06") && !mobilePhoneNumber.Equals(phoneNumber) && !mobilePhoneNumber.Equals(""))
+                {
+                    Util.showMessageBox("Dit nummer staat niet op uw naam!");
+                    return;
+                }
+                    
+                // Check if the phone/pin combi is correct.
+                else if (!phoneNumber.StartsWith("06") && !checkExtensionValid(phoneNumber, pin))
+                {
+                    Util.showMessageBox("Onjuiste nummer / pincode combinatie!");
+                    return;
+                }
+
+                // All ok, add to list.
+                else                 
                 {
                     int itemLength = 6;
                     String[] item = new String[itemLength];
                     item[0] = null;
-                    item[1] = phoneNumber.Trim();
+                    item[1] = phoneNumber;
                     item[3] = this.controller.getUsername();
-                    item[4] = this.newPinBox.Text.Trim();
+                    item[4] = pin;
                     item[5] = "t";
                     item[2] = "f";
                     if (this.newRadioButton.Checked) item[2] = "t";
@@ -112,9 +125,21 @@ namespace CTIclient
                     String[][] tempArray = new String[1][];
                     this.extensionList = Util.ArrayAddItem(item, this.extensionList, itemLength);
                     this.InitializeComponent();
-                }
-                else Util.showMessageBox("Dit nummer staat niet op uw naam!");
+                }                
             }           
+        }
+
+        /**
+         * Check with the controller if the phone/pin is valid
+         * 
+         * @param phonenumber
+         * @param pin
+         * @return boolean true if valid
+         * 
+         */
+        private Boolean checkExtensionValid(String phoneNumber, String pin)
+        {
+            return this.controller.checkExtensionValid(phoneNumber, pin);
         }
 
         /**
