@@ -9,5 +9,4 @@ C:\Users\Apex\documents\visual studio 2010\Projects\CTIclient\CTIclient\obj\Rele
 C:\Users\Apex\documents\visual studio 2010\Projects\CTIclient\CTIclient\obj\Release\CTIclient.pdb
 C:\Users\Apex\documents\visual studio 2010\Projects\CTIclient\CTIclient\bin\Release\Interop.SHDocVw.dll
 C:\Users\apex\Documents\Visual Studio 2010\Projects\CTIclient\CTIclient\bin\Release\WebSocket4Net.dll
-C:\Users\Apex\Documents\Visual Studio 2010\Projects\CTIclient\CTIclient\bin\Release\WebSocket4Net.pdb
 C:\Users\Apex\Documents\Visual Studio 2010\Projects\CTIclient\CTIclient\bin\Release\BandObjectLib.dll

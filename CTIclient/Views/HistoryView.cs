@@ -55,7 +55,8 @@ namespace CTIclient
         public void showHistory()
         {
             update();
-            this.Show();
+            if (this.historyList != null && this.historyList.Length > 0)
+                this.Show();
         }
 
         /**

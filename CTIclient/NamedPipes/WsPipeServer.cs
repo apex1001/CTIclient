@@ -26,6 +26,7 @@ namespace CTIclient
         private WebSocketClient wsClient;
         private ArrayList serverList;
         private String pipeName;
+
         public WsPipeServer(WebSocketClient wsClient, String pipeName)
         {
             this.wsClient = wsClient;

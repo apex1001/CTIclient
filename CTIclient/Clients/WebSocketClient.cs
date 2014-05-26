@@ -25,12 +25,12 @@ namespace CTIclient
     {
         private WebSocket websocket = null;
         private WsPipeServer pipeServer;
-        private string url;
+        private String url;
         private bool connectionOpen = false;
         private System.Timers.Timer timer;
-        private AESModule encryptionModule;
+        private CryptoModule encryptionModule;
 
-        public WebSocketClient(String url, String pipeName, AESModule encryptionModule = null)
+        public WebSocketClient(String url, String pipeName, CryptoModule encryptionModule = null)
         {            
             this.url = url;            
             this.pipeServer = new WsPipeServer(this, pipeName);
@@ -108,7 +108,7 @@ namespace CTIclient
          * @param eventargs
          * 
          */
-        void websocket_Opened(object sender, EventArgs e)
+        private void websocket_Opened(object sender, EventArgs e)
         {
             connectionOpen = true;            
         }
@@ -120,7 +120,7 @@ namespace CTIclient
          * @param eventargs
          * 
          */
-        void websocket_Closed(object sender, EventArgs e)
+        private void websocket_Closed(object sender, EventArgs e)
         {
             connectionOpen = false;
         }
@@ -132,7 +132,7 @@ namespace CTIclient
          * @param eventargs
          * 
          */
-        void websocket_Error(object sender, SuperSocket.ClientEngine.ErrorEventArgs e)
+        private void websocket_Error(object sender, SuperSocket.ClientEngine.ErrorEventArgs e)
         {
             // MessageBox.Show("Error!" + e.Exception.Message);
         }
@@ -145,7 +145,7 @@ namespace CTIclient
          * @param eventargs
          * 
          */
-        void websocket_MessageReceived(object sender, MessageReceivedEventArgs e)
+        private void websocket_MessageReceived(object sender, MessageReceivedEventArgs e)
         { 
             String message = e.Message;
             try

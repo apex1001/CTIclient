@@ -65,7 +65,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Clients\ADUser.cs" />
-    <Compile Include="Util\AESModule.cs" />
+    <Compile Include="Util\CryptoModule.cs" />
     <Compile Include="ClientController.cs">
       <SubType>UserControl</SubType>
     </Compile>

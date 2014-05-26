@@ -22,13 +22,13 @@ namespace CTIclient
      * Encrypt/decrypt 128 bit AES Base64
      * 
      */
-    public class AESModule
+    public class CryptoModule
     {
         private String sKy;
         private String sIV;
         private RijndaelManaged rijndaelModule;
 
-        public AESModule(String sKy, String sIV)
+        public CryptoModule(String sKy, String sIV)
         {
             this.sKy = sKy;
             this.sIV = sIV;

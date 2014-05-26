@@ -47,9 +47,9 @@ namespace CTIclient
          * @return cleaned string
          * 
          */
-        public static string CleanPhoneNumber(String number)
+        public static String CleanPhoneNumber(String number)
         {
-            string output = Regex.Replace(number, "[^0-9+]", "");
+            String output = Regex.Replace(number, "[^0-9+]", "");
             return output.Replace("+", "00");            
         }
 
@@ -60,7 +60,7 @@ namespace CTIclient
          * @return JSON string
          * 
          */
-        public static string toJSON(Object obj)
+        public static String toJSON(Object obj)
         {
             JavaScriptSerializer js = new JavaScriptSerializer();
             string json = js.Serialize(obj);

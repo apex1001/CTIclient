@@ -138,11 +138,6 @@ namespace CTIclient
             this.isActiveTab = true;            
         }
 
-        void Parent_LostFocus(object sender, EventArgs e)
-        {
-            MessageBox.Show ("lost focus");
-        }
-
         /**
          * Receive command from server
          * 
@@ -165,7 +160,7 @@ namespace CTIclient
                     this.statusObject.Pin = commandObject.Pin;
                     this.statusObject.Role = commandObject.Role;
                     this.extensionList = commandObject.Value;
-                    wsPipeClient.sendMessage("closeConnection");
+                    closeConnection();
                     
                     // Update statusPipeServer with tab status
                     statusPipeClient.putTabStatusMap(this.getCurrentTabStatus());
@@ -179,7 +174,7 @@ namespace CTIclient
                 if (command.Equals("userHistory"))
                 {
                     this.historyList = commandObject.Value;
-                    wsPipeClient.sendMessage("closeConnection");
+                    closeConnection();
                 }
 
                 // Receiving the url for the admin page
@@ -187,7 +182,7 @@ namespace CTIclient
                 {
                     String[][] valueArray = commandObject.Value;
                     String adminUrl = valueArray[0][0];
-                    wsPipeClient.sendMessage("closeConnection");
+                    closeConnection();
                     navigateToAdmin(adminUrl);
                 }
 
@@ -266,12 +261,12 @@ namespace CTIclient
                                 String result = value.GetValue(0).ToString();
                                 this.extensionValid = result.Equals("true");
                             }
-                            wsPipeClient.sendMessage("closeConnection");
+                            closeConnection();
                         }
                     }
                     catch (Exception)
                     {
-                        wsPipeClient.sendMessage("closeConnection");                       
+                        closeConnection();                       
                     }
                 }
 
@@ -290,7 +285,8 @@ namespace CTIclient
         {
             to = Util.CleanPhoneNumber(to);
 
-            if (!to.Equals("") && !this.statusObject.From.Equals("") && this.statusObject.Target.Equals(""))
+            if (!to.Equals("") && !this.statusObject.From.Equals("") &&
+                this.statusObject.Target.Equals("") && !this.statusObject.Status.Equals(CallSetup))
             {
                 // Check if there is a connected call, offer to transfer
                 if (this.statusObject.Status.Equals(CallConnected))
@@ -446,7 +442,7 @@ namespace CTIclient
             commandObject.Target = "";
 
             // Close connection
-            wsPipeClient.sendMessage("closeConnection");
+            closeConnection();
             doViewUpdate("callControlView");
         }
 
@@ -722,7 +718,7 @@ namespace CTIclient
                                                     pin: this.statusObject.Pin,
                                                    value: extensionList);
             sendCommand(commandObject);
-            wsPipeClient.sendMessage("closeConnection");
+            closeConnection();
         }
 
         /**
@@ -738,7 +734,7 @@ namespace CTIclient
                                                     pin: this.statusObject.Pin,
                                                    value: deletedExtensionList);
             sendCommand(commandObject);
-            wsPipeClient.sendMessage("closeConnection");
+            closeConnection();
         }
 
         /**
@@ -796,13 +792,24 @@ namespace CTIclient
             {
                 String sKy = settingsList["sKy"];
                 String sIV = settingsList["sIV"];
-                this.wsClient = new WebSocketClient(this.settingsList["ccsUrl"], this.wsPipeName, new AESModule(sKy,sIV));               
+                this.wsClient = new WebSocketClient(this.settingsList["ccsUrl"], this.wsPipeName, new CryptoModule(sKy,sIV));               
             }
             catch
             {
                 // Do nothing. If server is down user shouldn't be bothered when opening new tab.
             }         
         }
+
+        /**
+         * Close the websocket connection if there is no active call
+         * 
+         */
+        private void closeConnection()
+        {
+            if (!this.statusObject.Status.Equals(CallConnected) && !this.statusObject.Status.Equals(CallSetup))
+                wsPipeClient.sendMessage("closeConnection");
+        }
+
 
         /**
          * Get & apply the settings for this tab
