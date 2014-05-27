@@ -246,8 +246,7 @@ namespace CTIclient
         * 
         */
         private void handleShortcutKey(int keyCode)
-        {
-            Thread.Sleep(100);
+        {            
             switch (keyCode)
             {
                 // Alt + 1 -> select first line

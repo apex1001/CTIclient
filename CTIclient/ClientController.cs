@@ -286,7 +286,8 @@ namespace CTIclient
             to = Util.CleanPhoneNumber(to);
 
             if (!to.Equals("") && !this.statusObject.From.Equals("") &&
-                this.statusObject.Target.Equals("") && !this.statusObject.Status.Equals(CallSetup))
+                !this.statusObject.To.Equals(to) && this.statusObject.Target.Equals("") && 
+                !this.statusObject.Status.Equals(CallSetup))
             {
                 // Check if there is a connected call, offer to transfer
                 if (this.statusObject.Status.Equals(CallConnected))
