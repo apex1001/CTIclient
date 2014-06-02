@@ -9,3 +9,4 @@ C:\Users\Apex\Documents\Visual Studio 2010\Projects\CTIclient\CTIclient\obj\Debu
 C:\Users\Apex\Documents\Visual Studio 2010\Projects\CTIclient\CTIclient\obj\Debug\CTIclient.Properties.Resources.resources
 C:\Users\Apex\Documents\Visual Studio 2010\Projects\CTIclient\CTIclient\obj\Debug\CTIclient.csproj.GenerateResource.Cache
 C:\Users\Apex\Documents\Visual Studio 2010\Projects\CTIclient\CTIclient\bin\Debug\WebSocket4Net.dll
+C:\Users\Apex\Documents\Visual Studio 2010\Projects\CTIclient\CTIclient\bin\Debug\WebSocket4Net.pdb

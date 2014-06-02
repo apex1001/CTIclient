@@ -89,44 +89,49 @@ namespace CTIclient
          */
         private void addButton_Click(object sender, EventArgs e)
         {
-            String phoneNumber = this.newPhoneNumberBox.Text.Trim();
-            String mobilePhoneNumber = this.controller.getMobilePhoneNumber();
-            String pin = this.newPinBox.Text.Trim();
-                        
-            if (!this.newPhoneNumberBox.Text.Equals(""))
+            try
+            {
+                String phoneNumber = this.newPhoneNumberBox.Text.Trim();
+                String mobilePhoneNumber = this.controller.getMobilePhoneNumber();
+                String pin = this.newPinBox.Text.Trim();
+                if (!phoneNumber.Equals(""))
+                {
+                    // Check if the given cellular phone belongs to the user 
+                    if (phoneNumber.StartsWith("06") && !mobilePhoneNumber.Equals(phoneNumber) && !mobilePhoneNumber.Equals(""))
+                    {
+                        Util.showMessageBox("Dit nummer staat niet op uw naam!");
+                        return;
+                    }
+
+                    // Check if the phone/pin combi is correct.
+                    else if (!phoneNumber.StartsWith("06") && !checkExtensionValid(phoneNumber, pin))
+                    {
+                        Util.showMessageBox("Onjuiste nummer / pincode combinatie!");
+                        return;
+                    }
+
+                    // All ok, add to list.
+                    else
+                    {                        
+                        int itemLength = 6;
+                        String[] item = new String[itemLength];
+                        item[0] = null;
+                        item[1] = phoneNumber;
+                        item[3] = this.controller.getUsername();
+                        item[4] = pin;
+                        item[5] = "t";
+                        item[2] = "f";
+                        if (this.newRadioButton.Checked) item[2] = "t";
+
+                        String[][] tempArray = new String[1][];                       
+                        this.extensionList = Util.ArrayAddItem(item, this.extensionList, itemLength);
+                        this.InitializeComponent();
+                    }
+                }
+            }
+            catch 
             {                
-                // Check if the given cellular phone belongs to the user 
-                if (phoneNumber.StartsWith("06") && !mobilePhoneNumber.Equals(phoneNumber) && !mobilePhoneNumber.Equals(""))
-                {
-                    Util.showMessageBox("Dit nummer staat niet op uw naam!");
-                    return;
-                }
-                    
-                // Check if the phone/pin combi is correct.
-                else if (!phoneNumber.StartsWith("06") && !checkExtensionValid(phoneNumber, pin))
-                {
-                    Util.showMessageBox("Onjuiste nummer / pincode combinatie!");
-                    return;
-                }
-
-                // All ok, add to list.
-                else                 
-                {
-                    int itemLength = 6;
-                    String[] item = new String[itemLength];
-                    item[0] = null;
-                    item[1] = phoneNumber;
-                    item[3] = this.controller.getUsername();
-                    item[4] = pin;
-                    item[5] = "t";
-                    item[2] = "f";
-                    if (this.newRadioButton.Checked) item[2] = "t";
-
-                    String[][] tempArray = new String[1][];
-                    this.extensionList = Util.ArrayAddItem(item, this.extensionList, itemLength);
-                    this.InitializeComponent();
-                }                
-            }           
+            }
         }
 
         /**
@@ -177,7 +182,7 @@ namespace CTIclient
          */
         private void cancelButton_Click(object sender, EventArgs e)
         {
-            this.extensionList = controller.getExtensionList();
+            this.extensionList = getExtensionList();
             this.deletedExtensionList = null;       
             this.Dispose();            
         }
@@ -218,8 +223,22 @@ namespace CTIclient
          */
         public void update()
         {
-            this.extensionList = this.controller.getExtensionList();
+            this.extensionList = getExtensionList();
             InitializeComponent();
+        }
+
+        /**
+         * Get the extensionlist from the controller
+         * 
+         */
+        private String[][] getExtensionList()
+        {
+            var extensionList = this.controller.getExtensionList();
+            if (extensionList == null)
+            {
+                extensionList = new String[0][];
+            }
+            return extensionList;
         }
 
         /**
@@ -298,9 +317,8 @@ namespace CTIclient
                         this.pinBoxes[i].Anchor = AnchorStyles.None;
                         this.pinBoxes[i].Enabled = false;
                         this.pinBoxes[i].Name = "pin" + i.ToString();
-                        this.pinBoxes[i].Text = extensionItems.GetValue(4).ToString();
+                        this.pinBoxes[i].Text = "********";
                         this.pinBoxes[i].Size = new System.Drawing.Size(51, 20);
-                        this.pinBoxes[i].Mask = pinMask;
                         this.phoneNumberBoxes[i].HidePromptOnLeave = true;
 
                         // Radio button primary phone

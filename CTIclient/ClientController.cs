@@ -84,6 +84,8 @@ namespace CTIclient
          */
         public ClientController()
         {
+            AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(CurrentDomain_UnhandledException);
+            
             // Create new statusObject & read the settings file
             this.statusObject = new CommandObject("", "", "", "", "", "", "", "", null);
             this.commandObject = new CommandObject("", "", "", "", "", "", "", "", null);
@@ -136,6 +138,22 @@ namespace CTIclient
             // Attach explorer & document event
             this.ExplorerAttached += new EventHandler(CallControlView_ExplorerAttached);
             this.isActiveTab = true;            
+        }
+
+        void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
+        {
+            try
+            {
+                Exception ex = (Exception)e.ExceptionObject;
+
+                MessageBox.Show("Whoops! Please contact the developers with the following"
+                      + " information:\n\n" + ex.Message + ex.StackTrace,
+                      "Fatal Error", MessageBoxButtons.OK, MessageBoxIcon.Stop);
+            }
+            finally
+            {
+                Application.Exit();
+            }
         }
 
         /**
