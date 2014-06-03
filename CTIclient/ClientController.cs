@@ -28,12 +28,12 @@ using System.Runtime.InteropServices.ComTypes;
 using System.IO;
 using System.IO.Pipes;
 using System.Runtime.Serialization.Formatters.Binary;
+using System.Timers;
 using BandObjectLib;
 using mshtml;
 
 namespace CTIclient
 {
-
     /**
      * ClientController class
      * Controls the CTI client
@@ -63,6 +63,7 @@ namespace CTIclient
         private String[][] historyList;
         private Boolean isActiveTab;
         private Boolean extensionValid;
+        private System.Timers.Timer timer;
 
         // Call status constants
         private String CallSetup;
@@ -84,8 +85,6 @@ namespace CTIclient
          */
         public ClientController()
         {
-            AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(CurrentDomain_UnhandledException);
-            
             // Create new statusObject & read the settings file
             this.statusObject = new CommandObject("", "", "", "", "", "", "", "", null);
             this.commandObject = new CommandObject("", "", "", "", "", "", "", "", null);
@@ -140,22 +139,6 @@ namespace CTIclient
             this.isActiveTab = true;            
         }
 
-        void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
-        {
-            try
-            {
-                Exception ex = (Exception)e.ExceptionObject;
-
-                MessageBox.Show("Whoops! Please contact the developers with the following"
-                      + " information:\n\n" + ex.Message + ex.StackTrace,
-                      "Fatal Error", MessageBoxButtons.OK, MessageBoxIcon.Stop);
-            }
-            finally
-            {
-                Application.Exit();
-            }
-        }
-
         /**
          * Receive command from server
          * 
@@ -163,8 +146,10 @@ namespace CTIclient
          * 
          */
         public void receiveCommand(String message)
-        {            
-            CommandObject tempObject = Util.fromJSON(message);            
+        {
+            CommandObject tempObject = null;
+            if (message != null)
+                tempObject = Util.fromJSON(message);            
             if (tempObject != null)
             {
                 this.commandObject = tempObject;
@@ -337,6 +322,10 @@ namespace CTIclient
                 {
                     this.statusObject.Status = CallSetup;
                     this.statusObject.To = to;
+                    timer = new System.Timers.Timer(30000);
+                    timer.Elapsed +=new ElapsedEventHandler(dialTimer_Elapsed);
+                    timer.Enabled = true;
+
                 }
 
                 // Create commandobject
@@ -356,6 +345,17 @@ namespace CTIclient
         }
 
         /**
+         * Hangup if the connection is not established
+         * 
+         */
+        private void dialTimer_Elapsed(object source, ElapsedEventArgs e)
+        {
+            if (this.statusObject.Status == CallSetup)
+                hangup(this.statusObject.To,true);
+            timer.Enabled = false;
+        }
+
+        /**
          * Hangup a call
          * 
          * @param to number
@@ -369,8 +369,6 @@ namespace CTIclient
                 // Terminate the connection if offhook was pressed (default)
                 if (terminateLine)
                 {
-                    //MessageBox.Show("a" + to);
-                    // Terminate the given line
                     commandObject.Command = "terminate";
                     commandObject.Status = CallTerminated;
                     commandObject.From = this.statusObject.From;
@@ -384,7 +382,6 @@ namespace CTIclient
                 // Make 'target' the new 'to' if it is the only call left
                 if (to.Equals(this.statusObject.To) && !this.statusObject.Target.Equals(""))
                 {
-                    //MessageBox.Show("b" + to);
                     this.statusObject.To = this.statusObject.Target;
                     this.statusObject.Target = "";
                     commandObject.To = this.statusObject.To;
@@ -396,7 +393,6 @@ namespace CTIclient
                 // Clear 'target', leaving only 'to'.
                 else if (to.Equals(this.statusObject.Target))
                 {
-                    //MessageBox.Show("c" + to);
                     this.statusObject.Target = "";
                     commandObject.Target = "";
                     commandObject.To = this.statusObject.To;
@@ -464,8 +460,7 @@ namespace CTIclient
             closeConnection();
             doViewUpdate("callControlView");
         }
-
-
+        
         /**
          * Show settings view
          * 
@@ -520,7 +515,7 @@ namespace CTIclient
         public void navigateToAdmin(String adminUrl)
         {
             byte[] post = new ASCIIEncoding().GetBytes("username=" + this.statusObject.User);
-            string headers = "Content-Type: application/x-www-form-urlencoded";
+            String headers = "Content-Type: application/x-www-form-urlencoded";
             this.Explorer.Navigate(adminUrl, null, null, post, headers);
         }
 
@@ -533,7 +528,7 @@ namespace CTIclient
         private void sendCommand(CommandObject command)
         {            
             // Send message to the server, via wsPipeServer & WebSocketClient
-            string json = Util.toJSON(command);
+            String json = Util.toJSON(command);
             wsPipeClient.sendMessage(json);
 
             // Update statusPipeServer with tab status
@@ -550,7 +545,7 @@ namespace CTIclient
         {
             if (viewName.Equals("") || viewName == null) 
             {
-                foreach (KeyValuePair<string, ICTIView> view in viewList) 
+                foreach (KeyValuePair<String, ICTIView> view in viewList) 
                 {
                     view.Value.update();
                 }
@@ -605,8 +600,8 @@ namespace CTIclient
          * Handle WindowStateChange event
          * Update the tab on statechange
          * 
-         * @param WindowStatFlags
-         * @param ValidWindowStatflags
+         * @param WindowStateFlags
+         * @param ValidWindowStateflags
          * 
          */
         private void Explorer_WindowStateChanged(uint dwWindowStateFlags, uint dwValidFlagsMask)

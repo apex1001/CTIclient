@@ -31,7 +31,7 @@ namespace CTIclient
             {
                 Task.Factory.StartNew(() =>
                 {
-                    Dictionary<string, object> tabStatusMap = initTabStatusMap();
+                    Dictionary<String, Object> tabStatusMap = initTabStatusMap();
                     while (true)
                     {
                         try
@@ -46,7 +46,7 @@ namespace CTIclient
                                 {
                                     var line = reader.ReadLine();
                                     if (line.Contains("get"))
-                                    {                                        
+                                    {
                                         BinaryFormatter formatter = new BinaryFormatter();
                                         formatter.Serialize(writer.BaseStream, tabStatusMap);
                                         writer.Flush();
@@ -56,7 +56,7 @@ namespace CTIclient
                                         BinaryFormatter formatter = new BinaryFormatter();
                                         Dictionary<String, Object> tempStatusMap = (Dictionary<String, Object>)formatter.Deserialize(reader.BaseStream);
                                         tabStatusMap = tempStatusMap;
-         
+
                                         if (checkMapValid(tempStatusMap))
                                         {
                                             tabStatusMap = tempStatusMap;
@@ -67,21 +67,23 @@ namespace CTIclient
                             });
                         }
                         catch
-                        {                            
+                        {
                         }
-                    }
-
+                    }  
                 });
-
             }
             catch 
             {                
             }
         }
 
-        private Dictionary<string, object> initTabStatusMap()
+        /**
+         * Initialize a new tabStatusMap
+         * 
+         */
+        private Dictionary<String, Object> initTabStatusMap()
         {
-            Dictionary<string, object> tabStatusMap = new Dictionary<string, object>();
+            Dictionary<String, Object> tabStatusMap = new Dictionary<String, Object>();
 
             // Fill with at least one valid object
             tabStatusMap["commandObject"] = this.commandObject;
@@ -99,7 +101,7 @@ namespace CTIclient
          * @return true if valid
          * 
          */
-        private Boolean checkMapValid(Dictionary<string, object> tabStatusMap)
+        private Boolean checkMapValid(Dictionary<String, Object> tabStatusMap)
         {
             return (tabStatusMap != null && tabStatusMap["commandObject"] != null &&
                     tabStatusMap["statusObject"] != null && tabStatusMap["settingsList"] != null &&

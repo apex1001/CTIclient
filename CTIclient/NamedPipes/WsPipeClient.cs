@@ -43,23 +43,26 @@ namespace CTIclient
         {            
             Task.Factory.StartNew(() =>
             {
-                try
+                if (this.inClient != null)
                 {
-                    // Get a client stream
-                    StreamReader reader = new StreamReader(this.inClient);
-
-                    // Wait for a message, send to controller if active
-                    while (true)
+                    try
                     {
-                        String message = reader.ReadLine(); 
-                        if (this.controller != null && this.controller.getActiveTab())
+                        // Get a client stream
+                        StreamReader reader = new StreamReader(this.inClient);
+
+                        // Wait for a message, send to controller if active
+                        while (true)
                         {
-                            this.controller.receiveCommand(message);                        
+                            String message = reader.ReadLine();
+                            if (this.controller != null && this.controller.getActiveTab())
+                            {
+                                this.controller.receiveCommand(message);
+                            }
                         }
                     }
-                }
-                catch 
-                {                    
+                    catch
+                    {
+                    }
                 }
             });    
         }
@@ -73,18 +76,21 @@ namespace CTIclient
          */
         public Boolean sendMessage(String message)
         {
-            try
+            if (this.outClient != null)
             {
-                // Get a client stream 
-                StreamWriter writer = new StreamWriter(this.outClient);
-                writer.WriteLine(message);
-                writer.Flush();                
-                return true;
+                try
+                {
+                    // Get a client stream 
+                    StreamWriter writer = new StreamWriter(this.outClient);
+                    writer.WriteLine(message);
+                    writer.Flush();
+                    return true;
+                }
+                catch
+                {                    
+                }
             }
-            catch
-            {                            
-                return false;
-            }
+            return false;
         }
 
         /**
@@ -98,9 +104,8 @@ namespace CTIclient
             try
             {
                 // Create client & connect to pipe
-                //var client = new NamedPipeClientStream("wsPipesOfPiece");
                 var client = new NamedPipeClientStream(this.pipeName);
-                client.Connect(1);
+                client.Connect(10);
                 return client;
             }
 

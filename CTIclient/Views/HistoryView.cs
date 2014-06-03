@@ -224,7 +224,7 @@ namespace CTIclient
                 this.Controls.Add(dataGridView);
                 this.Name = "HistoryView";
                 this.Text = "History";
-                this.MinimumSize = new System.Drawing.Size(windowWidth + 17, windowHeight + 22);
+                this.MinimumSize = new System.Drawing.Size(windowWidth + 17, windowHeight + 38);
                 this.MaximumSize = new System.Drawing.Size(windowWidth + 17, windowHeight + 38);
                 this.StartPosition = FormStartPosition.CenterScreen;
                 this.ResumeLayout(false);
